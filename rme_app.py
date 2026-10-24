@@ -1,6 +1,7 @@
 """UI RME rawat jalan fase 1. Seluruh data pasien wajib fiktif."""
 from __future__ import annotations
 import time
+import html
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 import pandas as pd
@@ -144,7 +145,17 @@ def examination(factory,user,cipher):
         audit(s,user,"visit.clinical_read","Visit",vid,{"has_anamnesis":bool(a),"has_vitals":bool(t),"has_resume":bool(r)})
         s.commit()
     age=date.today().year-p.birth_date.year-((date.today().month,date.today().day)<(p.birth_date.month,p.birth_date.day))
-    st.markdown(f"""<div style="border:1px solid #ccd7e2;border-left:6px solid #315b7d;background:white;padding:14px;border-radius:8px"><b>{cipher.decrypt(p.name_ciphertext)}</b> · {age} tahun · {p.sex}<br>No. RM: {p.medical_record_no} · NIK: {cipher.decrypt(p.nik_ciphertext)[:4]}********{cipher.decrypt(p.nik_ciphertext)[-4:]}<br><span style="color:#a32626"><b>Alergi:</b> {p.allergies}</span><br>Status: {v.status} · DPJP: {dp.display_name if dp else 'Belum ditetapkan'} · Poli: {v.poli}</div>""",unsafe_allow_html=True)
+    # Semua nilai dinamis di-escape sebelum dirender dengan HTML kustom untuk mencegah injeksi markup.
+    safe_name=html.escape(cipher.decrypt(p.name_ciphertext))
+    raw_nik=cipher.decrypt(p.nik_ciphertext)
+    safe_nik=html.escape(raw_nik[:4]+"********"+raw_nik[-4:])
+    safe_sex=html.escape(p.sex)
+    safe_rm=html.escape(p.medical_record_no)
+    safe_allergies=html.escape(p.allergies)
+    safe_status=html.escape(v.status)
+    safe_dpjp=html.escape(dp.display_name if dp else "Belum ditetapkan")
+    safe_poli=html.escape(v.poli)
+    st.markdown(f"""<div style="border:1px solid #ccd7e2;border-left:6px solid #315b7d;background:white;padding:14px;border-radius:8px"><b>{safe_name}</b> · {age} tahun · {safe_sex}<br>No. RM: {safe_rm} · NIK: {safe_nik}<br><span style="color:#a32626"><b>Alergi:</b> {safe_allergies}</span><br>Status: {safe_status} · DPJP: {safe_dpjp} · Poli: {safe_poli}</div>""",unsafe_allow_html=True)
     tabs=st.tabs(["Anamnesis","Fisik & Tanda Vital","Penunjang","Asesmen & Diagnosis","Rencana","Resume"])
     with tabs[0]:
         try:
