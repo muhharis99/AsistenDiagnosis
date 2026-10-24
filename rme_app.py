@@ -217,26 +217,80 @@ def examination(factory,user,cipher):
             except PermissionError as e: st.warning(str(e))
 
 def resumes(factory,user,cipher):
+    """Daftar resume, koreksi berbatas waktu, dan addendum tanpa overwrite."""
     st.header("Resume Medis")
     try:
         require_permission(user,"resume:read")
         with factory() as s:
-            rows=s.scalars(select(ResumeMedical).order_by(ResumeMedical.updated_at.desc()).limit(200)).all(); data=[]
-            for r in rows:
-                v=s.get(Visit,r.visit_id); p=s.get(Patient,v.patient_id) if v else None
+            rows=s.scalars(select(ResumeMedical).order_by(ResumeMedical.updated_at.desc()).limit(200)).all()
+            data=[]
+            for item in rows:
+                v=s.get(Visit,item.visit_id); p=s.get(Patient,v.patient_id) if v else None
                 if p:
-                    data.append({"ID":r.id,"Status":r.status,"Versi":r.version,"No. RM":p.medical_record_no,"Nama":cipher.decrypt(p.name_ciphertext),"Kunjungan":v.visit_number,"Poli":v.poli,"Waktu WIB":_wib(r.updated_at)})
-                    append_audit(s,user,"resume.list_read","ResumeMedical",r.id,{"status":r.status})
+                    data.append({"ID":item.id,"Status":item.status,"Versi":item.version,"No. RM":p.medical_record_no,
+                                 "Nama":cipher.decrypt(p.name_ciphertext),"Kunjungan":v.visit_number,"Poli":v.poli,
+                                 "Waktu WIB":_wib(item.updated_at)})
+                    append_audit(s,user,"resume.list_read","ResumeMedical",item.id,{"status":item.status})
             s.commit()
-        if not data: st.info("Belum ada resume.")
+        if not data:
+            st.info("Belum ada resume.")
+            return
+        st.dataframe(pd.DataFrame(data),use_container_width=True,hide_index=True)
+        selected=st.selectbox("Pilih resume",data,format_func=lambda x:f"#{x['ID']} · {x['Nama']} · {x['Status']}")
+        with factory() as s:
+            r=s.get(ResumeMedical,selected["ID"])
+            addenda=s.scalars(select(ResumeAddendum).where(ResumeAddendum.resume_id==selected["ID"]).order_by(ResumeAddendum.id)).all()
+            append_audit(s,user,"resume.read","ResumeMedical",r.id,{"status":r.status,"version":r.version})
+            s.commit()
+        st.write("**S — Subjective**",r.subjective)
+        st.write("**O — Objective**",r.objective)
+        st.write("**A — Assessment**",r.assessment)
+        st.write("**P — Plan**",r.plan)
+        st.write("**Tindak lanjut**",r.follow_up)
+        if r.status=="final":
+            st.warning("Resume FINAL. Tanda tangan adalah simulasi hash, bukan TTE tersertifikasi.")
+            st.code(f"{r.signature_method}\\n{r.signature_digest}")
+            # Koreksi hanya ditawarkan kepada pembuat; service tetap memvalidasi izin dan jendela 48 jam.
+            if r.created_by==user.id:
+                try:
+                    require_permission(user,"resume:write")
+                    with st.form(f"resume_correction_{r.id}"):
+                        st.markdown("**Koreksi dalam 2x24 jam**")
+                        subj=st.text_area("S koreksi",r.subjective)
+                        obj=st.text_area("O koreksi",r.objective)
+                        assess=st.text_area("A koreksi",r.assessment)
+                        plan=st.text_area("P koreksi",r.plan)
+                        follow=st.text_area("Tindak lanjut koreksi",r.follow_up)
+                        reason=st.text_input("Alasan koreksi wajib")
+                        submit=st.form_submit_button("Simpan koreksi")
+                    if submit:
+                        with factory() as s:
+                            revised=correct_final_resume(s,user,r.id,ResumeInput(subjective=subj,objective=obj,assessment=assess,plan=plan,follow_up=follow),reason)
+                        st.success(f"Koreksi disimpan; versi sekarang {revised.version}, revisi lama dipertahankan."); st.rerun()
+                except PermissionError:
+                    pass
+                except Exception as exc:
+                    st.error(str(exc))
+            try:
+                require_permission(user,"resume:addendum")
+                with st.form(f"resume_addendum_{r.id}"):
+                    st.markdown("**Addendum (tanpa menimpa isi final)**")
+                    content=st.text_area("Isi addendum")
+                    reason=st.text_input("Alasan addendum")
+                    submit_add=st.form_submit_button("Tambahkan addendum")
+                if submit_add:
+                    with factory() as s: create_addendum(s,user,r.id,AddendumInput(content=content,reason=reason))
+                    st.success("Addendum ditambahkan dan audit dicatat."); st.rerun()
+            except PermissionError:
+                pass
+            if addenda:
+                st.markdown("### Riwayat addendum")
+                for item in addenda:
+                    st.markdown(f"**{_wib(item.created_at)}** — {item.content}  \\nAlasan: {item.reason}")
         else:
-            st.dataframe(pd.DataFrame(data),use_container_width=True,hide_index=True)
-            selected=st.selectbox("Pilih resume",data,format_func=lambda x:f"#{x['ID']} · {x['Nama']} · {x['Status']}")
-            with factory() as s:
-                r=s.get(ResumeMedical,selected["ID"]); append_audit(s,user,"resume.read","ResumeMedical",r.id,{"status":r.status}); s.commit()
-            st.write("**S**",r.subjective); st.write("**O**",r.objective); st.write("**A**",r.assessment); st.write("**P**",r.plan); st.write("**Tindak lanjut**",r.follow_up)
-            if r.status=="final": st.warning("Tanda tangan simulasi, bukan TTE tersertifikasi."); st.code(r.signature_digest)
-    except Exception as e: st.error(str(e))
+            st.info("Resume masih draf. Buka menu Pemeriksaan untuk melanjutkan.")
+    except Exception as e:
+        st.error(str(e))
 
 def administration(factory,user):
     st.header("Administrasi & audit")
