@@ -7,3 +7,14 @@ data/Testing.csv
 data/diabetes.csv
 data/pima.csv
 data/pima-indians-diabetes.csv
+
+# Secret, database dan state RME lokal
+.env
+!.env.example
+instance/
+*.db
+*.sqlite
+*.sqlite3
+.streamlit/secrets.toml
+.coverage
+htmlcov/
