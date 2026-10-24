@@ -45,7 +45,12 @@ def create_patient(session: Session, user: User, cipher: SensitiveFieldCipher, d
     append_audit(session,user,"patient.created","Patient",patient.id,{"no_rm":patient.medical_record_no,"is_demo":True,"consents":[x[0] for x in consents]})
     session.commit(); session.refresh(patient); return patient
 
-def patient_view(patient: Patient, cipher: SensitiveFieldCipher, reveal_nik: bool=False) -> dict:
+def patient_view(patient: Patient, cipher: SensitiveFieldCipher, reveal_nik: bool=False, user: User | None=None) -> dict:
+    """Representasi pasien dengan NIK dimasking kecuali aktor berizin."""
+    if reveal_nik:
+        if user is None:
+            raise BusinessRuleError("NIK penuh hanya boleh ditampilkan melalui service dengan pemeriksaan RBAC.")
+        require_permission(user, "patient:nik:reveal")
     nik = cipher.decrypt(patient.nik_ciphertext)
     return {"id":patient.id,"no_rm":patient.medical_record_no,"nama":cipher.decrypt(patient.name_ciphertext),
             "nik":nik if reveal_nik else nik[:4]+"********"+nik[-4:],"tanggal_lahir":patient.birth_date,
@@ -57,7 +62,7 @@ def get_patient(session: Session,user: User,patient_id:int,cipher:SensitiveField
     p=session.get(Patient,patient_id)
     if not p: raise BusinessRuleError("Pasien tidak ditemukan.")
     append_audit(session,user,"patient.read","Patient",p.id,{"nik_revealed":reveal_nik})
-    session.commit(); return patient_view(p,cipher,reveal_nik)
+    session.commit(); return patient_view(p,cipher,reveal_nik,user=user)
 
 def search_patients(session:Session,user:User,query:str,cipher:SensitiveFieldCipher)->list[dict]:
     require_permission(user,"patient:read"); q=query.strip()
