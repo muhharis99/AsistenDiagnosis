@@ -99,3 +99,40 @@ Sebelum pemakaian klinis, diperlukan: validasi prospektif/eksternal oleh dokter,
 - Komdigi — layanan 112: https://layanan112.komdigi.go.id/tentang
 - WHO — diabetes: https://www.who.int/news-room/questions-and-answers/item/diabetes
 - BPK RI — UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi: https://peraturan.bpk.go.id/Details/229798/uu-no-27-tahun-2022
+
+
+## Fase 1 — Fondasi RME Rawat Jalan (prototipe)
+
+Fase 1 menambahkan entry point RME terpisah di `rme_app.py` agar UI AI yang lama tetap tidak rusak sampai panel AI dipasang ke alur klinis pada Fase 2. Semua data pasien dan kunjungan yang dibuat lewat RME ini adalah fiktif. Aplikasi menolak `APP_MODE` selain `demo`.
+
+### Jalankan RME demo
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python scripts/init_demo.py
+streamlit run rme_app.py
+```
+
+Pada Windows PowerShell, gunakan `.venv\\Scripts\\Activate.ps1` untuk aktivasi venv.
+
+Seeder akan membuat `.env` lokal berisi kunci enkripsi, database SQLite, akun demo, serta sejumlah pasien/kunjungan sintetis. File `.env` dan database tidak boleh masuk Git. Akun demo hanya untuk localhost:
+
+- `pendaftaran_demo / DemoDaftar!2026`
+- `perawat_demo / DemoPerawat!2026`
+- `dokter_demo / DemoDokter!2026`
+- `rekam_medis_demo / DemoRekam!2026`
+- `pimpinan_demo / DemoPimpinan!2026`
+- `admin_sistem_demo / DemoSistem!2026`
+
+### Cakupan fase ini
+
+Autentikasi Argon2, role-based access control (RBAC) di lapisan service, rate limit login dalam memori, timeout idle, enkripsi field nama/NIK, masking NIK, pencatatan consent, pendaftaran, antrean, anamnesis, validasi tanda vital, draft/finalisasi resume SOAP, tanda tangan simulasi, koreksi 48 jam/addendum, dan audit append-only berantai hash. Kamus data awal: `docs/kamus_data_fase1.csv`; rincian: [docs/FASE_1_IMPLEMENTASI.md](docs/FASE_1_IMPLEMENTASI.md).
+
+```bash
+python -m compileall -q rme rme_app.py scripts tests
+pytest -q
+```
+
+**Penting:** RME Fase 1 adalah prototipe edukasi/riset, bukan penggunaan klinis. AI belum dihubungkan di fase ini, diagnosis tidak diisi otomatis, SATUSEHAT belum mengirim data, dan tanda tangan elektronik hanya simulasi bukan TTE tersertifikasi. Nama/NIK dienkripsi pada level field; catatan klinis belum mendapat enkripsi field-level. Amankan file database/host dan jangan expose ke jaringan publik. Belum ada klaim kepatuhan penuh atau sertifikasi.
