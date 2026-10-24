@@ -1,0 +1,27 @@
+variabel,tipe,format,definisi_operasional,padanan_KMK_1423_2022,path_FHIR,terminologi,status
+no_rm,string,RM-D + 6 digit,Nomor rekam medis internal demo,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.identifier,TODO-VERIFIKASI,perlu dicocokkan
+nama,string,2-150 karakter,Nama fiktif tersimpan terenkripsi,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.name,TODO-VERIFIKASI,field-level encrypted
+nik,string,16 digit,NIK fiktif dienkripsi dan dimasking,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.identifier,TODO-VERIFIKASI,jangan gunakan NIK nyata
+tanggal_lahir,date,DD/MM/YYYY di UI,Tanggal lahir pasien fiktif,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.birthDate,TODO-VERIFIKASI
+jenis_kelamin,string,Laki-laki/Perempuan/Tidak diketahui,Nilai jenis kelamin demo,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.gender,TODO-VERIFIKASI
+agama,string,maks 60 karakter,Data sosial,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.extension,TODO-VERIFIKASI
+pekerjaan,string,maks 100 karakter,Data sosial,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.extension,TODO-VERIFIKASI
+pendidikan,string,maks 100 karakter,Data sosial,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.extension,TODO-VERIFIKASI
+status_perkawinan,string,maks 40 karakter,Data sosial,Perlu dicocokkan dengan lampiran KMK 1423/2022,Patient.maritalStatus,TODO-VERIFIKASI
+persetujuan_umum,boolean,true/false,Persetujuan umum simulasi,Perlu dicocokkan dengan lampiran KMK 1423/2022,Consent,TODO-VERIFIKASI
+persetujuan_pembukaan_data,boolean,true/false,Persetujuan pembukaan data tercatat terpisah,Perlu dicocokkan dengan lampiran KMK 1423/2022,Consent,TODO-VERIFIKASI
+persetujuan_ai,boolean,true/false,Persetujuan AI-assist; AI belum aktif di Fase 1,Perlu dicocokkan dengan lampiran KMK 1423/2022,Consent,TODO-VERIFIKASI
+nomor_kunjungan,string,KJ-D + tanggal + urutan,Nomor internal kunjungan,Perlu dicocokkan dengan lampiran KMK 1423/2022,Encounter.identifier,TODO-VERIFIKASI
+status_kunjungan,string,arrived/in-progress/finished,Status alur rawat jalan yang dibatasi service,Perlu dicocokkan dengan lampiran KMK 1423/2022,Encounter.status,TODO-VERIFIKASI
+keluhan_utama,string,maks 4000 karakter,Isi anamnesis,Perlu dicocokkan dengan lampiran KMK 1423/2022,Condition/ClinicalImpression,TODO-VERIFIKASI
+tekanan_sistolik,integer,40-300 mmHg,Tekanan sistolik,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+tekanan_diastolik,integer,20-200 mmHg,Harus di bawah sistolik,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+nadi,integer,20-250 /menit,Nadi per menit,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+frekuensi_napas,integer,4-80 /menit,Frekuensi respirasi,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+suhu,float,25-45 derajat C,Suhu tubuh,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+spo2,float,50-100 persen,Saturasi oksigen,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+berat_badan,float,0.2-500 kg,Berat badan,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+tinggi_badan,float,20-250 cm,Tinggi badan,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+imt,float,kg/m2,Hasil hitung berat/(tinggi meter)^2,Perlu dicocokkan dengan lampiran KMK 1423/2022,Observation,LOINC/UCUM TODO-VERIFIKASI,perlu validasi
+resume_status,string,draft/final,Draf bisa disunting; final dilindungi koreksi/addendum,Perlu dicocokkan dengan lampiran KMK 1423/2022,Composition.status,TODO-VERIFIKASI
+metode_tanda_tangan,string,SIMULASI_BUKAN_TTE_TERSERTIFIKASI,Hash simulasi demo; bukan TTE tersertifikasi,Perlu dicocokkan dengan lampiran KMK 1423/2022,Composition.attester,TODO-VERIFIKASI
