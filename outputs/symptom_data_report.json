@@ -1,0 +1,26 @@
+[
+  {
+    "source_rows":224,
+    "rows_after_cleaning":215,
+    "duplicate_rows_removed":9,
+    "duplicate_columns_removed":[
+
+    ],
+    "feature_count":32,
+    "class_count":8,
+    "class_counts":{
+      "DATA DEMO — pola sintetis A":26,
+      "DATA DEMO — pola sintetis B":27,
+      "DATA DEMO — pola sintetis C":26,
+      "DATA DEMO — pola sintetis D":28,
+      "DATA DEMO — pola sintetis E":26,
+      "DATA DEMO — pola sintetis F":26,
+      "DATA DEMO — pola sintetis G":28,
+      "DATA DEMO — pola sintetis H":28
+    },
+    "source":"generator sintetis lokal",
+    "dataset_mode":"DATA DEMO SINTETIS",
+    "is_demo":true,
+    "note":"Data DEMO hanya menguji perangkat lunak; dilarang menafsirkan metriknya sebagai kinerja medis."
+  }
+]

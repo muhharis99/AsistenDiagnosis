@@ -1,0 +1,867 @@
+{
+  "itching": {
+    "id": "itching",
+    "label_id": "Gatal",
+    "aliases": [
+      "gatal"
+    ],
+    "needs_medical_review": true
+  },
+  "skin_rash": {
+    "id": "skin_rash",
+    "label_id": "Ruam kulit",
+    "aliases": [
+      "ruam",
+      "ruam kulit"
+    ],
+    "needs_medical_review": true
+  },
+  "nodal_skin_eruptions": {
+    "id": "nodal_skin_eruptions",
+    "label_id": "Lesi kulit berbintil",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "continuous_sneezing": {
+    "id": "continuous_sneezing",
+    "label_id": "Bersin terus-menerus",
+    "aliases": [
+      "bersin terus-menerus"
+    ],
+    "needs_medical_review": true
+  },
+  "shivering": {
+    "id": "shivering",
+    "label_id": "Menggigil",
+    "aliases": [
+      "menggigil"
+    ],
+    "needs_medical_review": true
+  },
+  "chills": {
+    "id": "chills",
+    "label_id": "Merasa kedinginan/menggigil",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "joint_pain": {
+    "id": "joint_pain",
+    "label_id": "Nyeri sendi",
+    "aliases": [
+      "nyeri sendi"
+    ],
+    "needs_medical_review": true
+  },
+  "stomach_pain": {
+    "id": "stomach_pain",
+    "label_id": "Nyeri perut",
+    "aliases": [
+      "sakit perut"
+    ],
+    "needs_medical_review": true
+  },
+  "acidity": {
+    "id": "acidity",
+    "label_id": "Rasa asam/terbakar di lambung",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "ulcers_on_tongue": {
+    "id": "ulcers_on_tongue",
+    "label_id": "Luka pada lidah",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "muscle_wasting": {
+    "id": "muscle_wasting",
+    "label_id": "Penyusutan massa otot",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "vomiting": {
+    "id": "vomiting",
+    "label_id": "Muntah",
+    "aliases": [
+      "muntah"
+    ],
+    "needs_medical_review": true
+  },
+  "burning_micturition": {
+    "id": "burning_micturition",
+    "label_id": "Nyeri/perih saat berkemih",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "spotting_urination": {
+    "id": "spotting_urination",
+    "label_id": "Bercak darah saat berkemih",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "fatigue": {
+    "id": "fatigue",
+    "label_id": "Kelelahan",
+    "aliases": [
+      "lelah"
+    ],
+    "needs_medical_review": true
+  },
+  "weight_gain": {
+    "id": "weight_gain",
+    "label_id": "Berat badan bertambah",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "anxiety": {
+    "id": "anxiety",
+    "label_id": "Rasa cemas",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "cold_hands_and_feets": {
+    "id": "cold_hands_and_feets",
+    "label_id": "Tangan dan kaki terasa dingin",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "mood_swings": {
+    "id": "mood_swings",
+    "label_id": "Perubahan suasana hati",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "weight_loss": {
+    "id": "weight_loss",
+    "label_id": "Berat badan menurun tanpa sebab jelas",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "restlessness": {
+    "id": "restlessness",
+    "label_id": "Gelisah",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "lethargy": {
+    "id": "lethargy",
+    "label_id": "Lesu",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "patches_in_throat": {
+    "id": "patches_in_throat",
+    "label_id": "Bercak pada tenggorokan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "irregular_sugar_level": {
+    "id": "irregular_sugar_level",
+    "label_id": "Kadar gula tidak teratur",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "cough": {
+    "id": "cough",
+    "label_id": "Batuk",
+    "aliases": [
+      "batuk"
+    ],
+    "needs_medical_review": true
+  },
+  "high_fever": {
+    "id": "high_fever",
+    "label_id": "Demam tinggi",
+    "aliases": [
+      "demam tinggi"
+    ],
+    "needs_medical_review": true
+  },
+  "sunken_eyes": {
+    "id": "sunken_eyes",
+    "label_id": "Mata cekung",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "breathlessness": {
+    "id": "breathlessness",
+    "label_id": "Sesak napas",
+    "aliases": [
+      "sesak napas"
+    ],
+    "needs_medical_review": true
+  },
+  "sweating": {
+    "id": "sweating",
+    "label_id": "Berkeringat",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "dehydration": {
+    "id": "dehydration",
+    "label_id": "Tanda dehidrasi",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "indigestion": {
+    "id": "indigestion",
+    "label_id": "Gangguan pencernaan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "headache": {
+    "id": "headache",
+    "label_id": "Sakit kepala",
+    "aliases": [
+      "sakit kepala"
+    ],
+    "needs_medical_review": true
+  },
+  "yellowish_skin": {
+    "id": "yellowish_skin",
+    "label_id": "Kulit tampak kekuningan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "dark_urine": {
+    "id": "dark_urine",
+    "label_id": "Warna urine gelap",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "nausea": {
+    "id": "nausea",
+    "label_id": "Mual",
+    "aliases": [
+      "mual"
+    ],
+    "needs_medical_review": true
+  },
+  "loss_of_appetite": {
+    "id": "loss_of_appetite",
+    "label_id": "Nafsu makan menurun",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "pain_behind_the_eyes": {
+    "id": "pain_behind_the_eyes",
+    "label_id": "Nyeri di belakang mata",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "back_pain": {
+    "id": "back_pain",
+    "label_id": "Nyeri punggung",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "constipation": {
+    "id": "constipation",
+    "label_id": "Sembelit",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "abdominal_pain": {
+    "id": "abdominal_pain",
+    "label_id": "Nyeri abdomen",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "diarrhoea": {
+    "id": "diarrhoea",
+    "label_id": "Diare",
+    "aliases": [
+      "diare"
+    ],
+    "needs_medical_review": true
+  },
+  "mild_fever": {
+    "id": "mild_fever",
+    "label_id": "Demam ringan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "yellow_urine": {
+    "id": "yellow_urine",
+    "label_id": "Urine berwarna kuning pekat",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "yellowing_of_eyes": {
+    "id": "yellowing_of_eyes",
+    "label_id": "Bagian putih mata menguning",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "acute_liver_failure": {
+    "id": "acute_liver_failure",
+    "label_id": "Gangguan fungsi hati akut",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "fluid_overload": {
+    "id": "fluid_overload",
+    "label_id": "Kelebihan cairan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "swelling_of_stomach": {
+    "id": "swelling_of_stomach",
+    "label_id": "Pembengkakan perut",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "swelled_lymph_nodes": {
+    "id": "swelled_lymph_nodes",
+    "label_id": "Pembesaran kelenjar getah bening",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "malaise": {
+    "id": "malaise",
+    "label_id": "Rasa tidak enak badan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "blurred_and_distorted_vision": {
+    "id": "blurred_and_distorted_vision",
+    "label_id": "Penglihatan kabur/terdistorsi",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "phlegm": {
+    "id": "phlegm",
+    "label_id": "Dahak",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "throat_irritation": {
+    "id": "throat_irritation",
+    "label_id": "Iritasi tenggorokan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "redness_of_eyes": {
+    "id": "redness_of_eyes",
+    "label_id": "Mata merah",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "sinus_pressure": {
+    "id": "sinus_pressure",
+    "label_id": "Tekanan pada sinus",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "runny_nose": {
+    "id": "runny_nose",
+    "label_id": "Hidung berair",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "congestion": {
+    "id": "congestion",
+    "label_id": "Hidung tersumbat",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "chest_pain": {
+    "id": "chest_pain",
+    "label_id": "Nyeri dada",
+    "aliases": [
+      "nyeri dada"
+    ],
+    "needs_medical_review": true
+  },
+  "weakness_in_limbs": {
+    "id": "weakness_in_limbs",
+    "label_id": "Kelemahan anggota gerak",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "fast_heart_rate": {
+    "id": "fast_heart_rate",
+    "label_id": "Denyut jantung cepat",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "pain_during_bowel_movements": {
+    "id": "pain_during_bowel_movements",
+    "label_id": "Nyeri saat buang air besar",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "pain_in_anal_region": {
+    "id": "pain_in_anal_region",
+    "label_id": "Nyeri di area anus",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "bloody_stool": {
+    "id": "bloody_stool",
+    "label_id": "Tinja berdarah",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "neck_pain": {
+    "id": "neck_pain",
+    "label_id": "Nyeri leher",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "dizziness": {
+    "id": "dizziness",
+    "label_id": "Pusing",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "cramps": {
+    "id": "cramps",
+    "label_id": "Kram",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "obesity": {
+    "id": "obesity",
+    "label_id": "Obesitas pada data sumber",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "swollen_legs": {
+    "id": "swollen_legs",
+    "label_id": "Kaki bengkak",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "swollen_blood_vessels": {
+    "id": "swollen_blood_vessels",
+    "label_id": "Pembuluh darah membesar",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "puffy_face_and_eyes": {
+    "id": "puffy_face_and_eyes",
+    "label_id": "Wajah dan mata bengkak",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "enlarged_thyroid": {
+    "id": "enlarged_thyroid",
+    "label_id": "Pembesaran kelenjar tiroid",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "brittle_nails": {
+    "id": "brittle_nails",
+    "label_id": "Kuku rapuh",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "swollen_extremeties": {
+    "id": "swollen_extremeties",
+    "label_id": "Anggota tubuh bengkak",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "excessive_hunger": {
+    "id": "excessive_hunger",
+    "label_id": "Rasa lapar berlebihan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "drying_and_tingling_lips": {
+    "id": "drying_and_tingling_lips",
+    "label_id": "Bibir kering/kesemutan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "slurred_speech": {
+    "id": "slurred_speech",
+    "label_id": "Bicara pelo",
+    "aliases": [
+      "bicara pelo"
+    ],
+    "needs_medical_review": true
+  },
+  "muscle_weakness": {
+    "id": "muscle_weakness",
+    "label_id": "Kelemahan otot",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "stiff_neck": {
+    "id": "stiff_neck",
+    "label_id": "Leher kaku",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "swelling_joints": {
+    "id": "swelling_joints",
+    "label_id": "Sendi bengkak",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "movement_stiffness": {
+    "id": "movement_stiffness",
+    "label_id": "Kekakuan saat bergerak",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "spinning_movements": {
+    "id": "spinning_movements",
+    "label_id": "Sensasi berputar",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "loss_of_balance": {
+    "id": "loss_of_balance",
+    "label_id": "Kehilangan keseimbangan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "unsteadiness": {
+    "id": "unsteadiness",
+    "label_id": "Tubuh tidak stabil",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "weakness_of_one_body_side": {
+    "id": "weakness_of_one_body_side",
+    "label_id": "Kelemahan satu sisi tubuh",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "loss_of_smell": {
+    "id": "loss_of_smell",
+    "label_id": "Kehilangan kemampuan mencium bau",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "bladder_discomfort": {
+    "id": "bladder_discomfort",
+    "label_id": "Rasa tidak nyaman pada kandung kemih",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "continuous_feel_of_urine": {
+    "id": "continuous_feel_of_urine",
+    "label_id": "Sering merasa ingin berkemih",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "internal_itching": {
+    "id": "internal_itching",
+    "label_id": "Rasa gatal internal pada data sumber",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "depression": {
+    "id": "depression",
+    "label_id": "Perubahan suasana perasaan pada data sumber",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "irritability": {
+    "id": "irritability",
+    "label_id": "Mudah tersinggung",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "muscle_pain": {
+    "id": "muscle_pain",
+    "label_id": "Nyeri otot",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "altered_sensorium": {
+    "id": "altered_sensorium",
+    "label_id": "Perubahan kesadaran/status mental",
+    "aliases": [
+      "penurunan kesadaran"
+    ],
+    "needs_medical_review": true
+  },
+  "coma": {
+    "id": "coma",
+    "label_id": "Koma/penurunan kesadaran berat",
+    "aliases": [
+      "penurunan kesadaran"
+    ],
+    "needs_medical_review": true
+  },
+  "stomach_bleeding": {
+    "id": "stomach_bleeding",
+    "label_id": "Perdarahan saluran cerna pada data sumber",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "blood_in_sputum": {
+    "id": "blood_in_sputum",
+    "label_id": "Darah pada dahak",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "palpitations": {
+    "id": "palpitations",
+    "label_id": "Jantung berdebar",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "painful_walking": {
+    "id": "painful_walking",
+    "label_id": "Nyeri saat berjalan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "blister": {
+    "id": "blister",
+    "label_id": "Lepuh",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "skin_peeling": {
+    "id": "skin_peeling",
+    "label_id": "Kulit mengelupas",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "irritation_in_anus": {
+    "id": "irritation_in_anus",
+    "label_id": "Iritasi sekitar anus",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "bruising": {
+    "id": "bruising",
+    "label_id": "Memar",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "extra_marital_contacts": {
+    "id": "extra_marital_contacts",
+    "label_id": "Riwayat kontak seksual ekstra-marit(al) pada label sumber",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "knee_pain": {
+    "id": "knee_pain",
+    "label_id": "Nyeri lutut",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "hip_joint_pain": {
+    "id": "hip_joint_pain",
+    "label_id": "Nyeri sendi panggul",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "foul_smell_of_urine": {
+    "id": "foul_smell_of_urine",
+    "label_id": "Urine berbau tidak biasa",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "passage_of_gases": {
+    "id": "passage_of_gases",
+    "label_id": "Sering buang gas",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "toxic_look_typhos": {
+    "id": "toxic_look_typhos",
+    "label_id": "Tampak sakit berat pada label sumber (typhos)",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "red_spots_over_body": {
+    "id": "red_spots_over_body",
+    "label_id": "Bintik merah pada tubuh",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "belly_pain": {
+    "id": "belly_pain",
+    "label_id": "Nyeri perut",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "abnormal_menstruation": {
+    "id": "abnormal_menstruation",
+    "label_id": "Menstruasi tidak normal",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "dischromic_patches": {
+    "id": "dischromic_patches",
+    "label_id": "Bercak perubahan warna kulit",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "watering_from_eyes": {
+    "id": "watering_from_eyes",
+    "label_id": "Mata berair",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "increased_appetite": {
+    "id": "increased_appetite",
+    "label_id": "Nafsu makan meningkat",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "polyuria": {
+    "id": "polyuria",
+    "label_id": "Sering berkemih",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "family_history": {
+    "id": "family_history",
+    "label_id": "Riwayat keluarga",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "mucoid_sputum": {
+    "id": "mucoid_sputum",
+    "label_id": "Dahak berlendir",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "rusty_sputum": {
+    "id": "rusty_sputum",
+    "label_id": "Dahak berwarna seperti karat pada label sumber",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "lack_of_concentration": {
+    "id": "lack_of_concentration",
+    "label_id": "Sulit berkonsentrasi",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "visual_disturbances": {
+    "id": "visual_disturbances",
+    "label_id": "Gangguan penglihatan",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "receiving_blood_transfusion": {
+    "id": "receiving_blood_transfusion",
+    "label_id": "Pernah menerima transfusi darah",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "receiving_unsterile_injections": {
+    "id": "receiving_unsterile_injections",
+    "label_id": "Paparan suntikan tidak steril menurut label sumber",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "distention_of_abdomen": {
+    "id": "distention_of_abdomen",
+    "label_id": "Perut membuncit/distensi",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "history_of_alcohol_consumption": {
+    "id": "history_of_alcohol_consumption",
+    "label_id": "Riwayat konsumsi alkohol",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "prominent_veins_on_calf": {
+    "id": "prominent_veins_on_calf",
+    "label_id": "Pembuluh darah betis tampak menonjol",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "pus_filled_pimples": {
+    "id": "pus_filled_pimples",
+    "label_id": "Jerawat bernanah",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "blackheads": {
+    "id": "blackheads",
+    "label_id": "Komedo",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "scurring": {
+    "id": "scurring",
+    "label_id": "Bekas/kerak kulit pada label sumber",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "silver_like_dusting": {
+    "id": "silver_like_dusting",
+    "label_id": "Sisik keperakan pada kulit",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "small_dents_in_nails": {
+    "id": "small_dents_in_nails",
+    "label_id": "Lekukan kecil pada kuku",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "inflammatory_nails": {
+    "id": "inflammatory_nails",
+    "label_id": "Peradangan kuku",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "red_sore_around_nose": {
+    "id": "red_sore_around_nose",
+    "label_id": "Luka kemerahan sekitar hidung",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "yellow_crust_ooze": {
+    "id": "yellow_crust_ooze",
+    "label_id": "Kerak kuning/cairan pada kulit",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "seizures": {
+    "id": "seizures",
+    "label_id": "Kejang",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "seizure": {
+    "id": "seizure",
+    "label_id": "Kejang",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "convulsion": {
+    "id": "convulsion",
+    "label_id": "Kejang",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "shortness_of_breath": {
+    "id": "shortness_of_breath",
+    "label_id": "Sesak napas",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "vomiting_blood": {
+    "id": "vomiting_blood",
+    "label_id": "Muntah darah",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "loss_of_consciousness": {
+    "id": "loss_of_consciousness",
+    "label_id": "Penurunan kesadaran",
+    "aliases": [],
+    "needs_medical_review": true
+  },
+  "paralysis": {
+    "id": "paralysis",
+    "label_id": "Kelumpuhan",
+    "aliases": [],
+    "needs_medical_review": true
+  }
+}

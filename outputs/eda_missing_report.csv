@@ -1,0 +1,9 @@
+feature,missing_as_stored,zero_treated_as_missing,missing_after_zero_handling
+Age,0,0,0
+BMI,0,11,11
+BloodPressure,0,35,35
+DiabetesPedigreeFunction,0,0,0
+Glucose,0,5,5
+Insulin,0,374,374
+Pregnancies,0,0,0
+SkinThickness,0,227,227

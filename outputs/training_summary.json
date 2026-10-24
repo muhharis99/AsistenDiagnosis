@@ -1,0 +1,154 @@
+{
+  "project": "Pima Diabetes Early Screening",
+  "created_at_utc": "2026-10-24T18:13:26.593105+00:00",
+  "data_source": "OpenML data_id=37",
+  "dataset_rows": 768,
+  "target_distribution": {
+    "0": 500,
+    "1": 268
+  },
+  "features": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "target": "Outcome",
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "stratified": true
+  },
+  "cross_validation": {
+    "type": "StratifiedKFold",
+    "n_splits": 5,
+    "shuffle": true,
+    "random_state": 42
+  },
+  "selection_rule": "Prioritas recall CV; ROC-AUC sebagai pemecah seri",
+  "selected_model": "Gradient Boosting",
+  "selected_model_params": {
+    "model__learning_rate": 0.03,
+    "model__max_depth": 2,
+    "model__min_samples_leaf": 3,
+    "model__n_estimators": 100
+  },
+  "selected_model_cv_metrics": {
+    "recall_mean": 0.7335548172757476,
+    "precision_mean_at_0_5": 0.631385434441335,
+    "f1_mean_at_0_5": 0.6783020673774379,
+    "roc_auc_mean": 0.8305758582502769
+  },
+  "all_models_cv_metrics": {
+    "Logistic Regression": {
+      "recall_mean": 0.7244739756367664,
+      "precision_mean_at_0_5": 0.6429091684104471,
+      "f1_mean_at_0_5": 0.6791895767639055,
+      "roc_auc_mean": 0.8449363233665558
+    },
+    "Random Forest": {
+      "recall_mean": 0.7101882613510521,
+      "precision_mean_at_0_5": 0.6905052264808363,
+      "f1_mean_at_0_5": 0.6994182288299935,
+      "roc_auc_mean": 0.8306962901439647
+    },
+    "Gradient Boosting": {
+      "recall_mean": 0.7335548172757476,
+      "precision_mean_at_0_5": 0.631385434441335,
+      "f1_mean_at_0_5": 0.6783020673774379,
+      "roc_auc_mean": 0.8305758582502769
+    }
+  },
+  "cv_comparison_rows": [
+    {
+      "model": "Logistic Regression",
+      "cv_recall_mean": 0.7244739756367664,
+      "cv_recall_std": 0.055021711253144874,
+      "cv_precision_mean_at_0_5": 0.6429091684104471,
+      "cv_f1_mean_at_0_5": 0.6791895767639055,
+      "cv_roc_auc_mean": 0.8449363233665558,
+      "threshold_oof": 0.4285649607213072,
+      "oof_recall_at_threshold": 0.8037383177570093,
+      "oof_precision_at_threshold": 0.5830508474576271,
+      "best_params": "{\"model__C\": 0.1}"
+    },
+    {
+      "model": "Random Forest",
+      "cv_recall_mean": 0.7101882613510521,
+      "cv_recall_std": 0.013351642855460914,
+      "cv_precision_mean_at_0_5": 0.6905052264808363,
+      "cv_f1_mean_at_0_5": 0.6994182288299935,
+      "cv_roc_auc_mean": 0.8306962901439647,
+      "threshold_oof": 0.3942166377879987,
+      "oof_recall_at_threshold": 0.8084112149532711,
+      "oof_precision_at_threshold": 0.5986159169550173,
+      "best_params": "{\"model__max_depth\": 8, \"model__max_features\": \"sqrt\", \"model__min_samples_leaf\": 3, \"model__n_estimators\": 200}"
+    },
+    {
+      "model": "Gradient Boosting",
+      "cv_recall_mean": 0.7335548172757476,
+      "cv_recall_std": 0.019755573086137568,
+      "cv_precision_mean_at_0_5": 0.631385434441335,
+      "cv_f1_mean_at_0_5": 0.6783020673774379,
+      "cv_roc_auc_mean": 0.8305758582502769,
+      "threshold_oof": 0.4382849846156534,
+      "oof_recall_at_threshold": 0.8130841121495327,
+      "oof_precision_at_threshold": 0.5958904109589042,
+      "best_params": "{\"model__learning_rate\": 0.03, \"model__max_depth\": 2, \"model__min_samples_leaf\": 3, \"model__n_estimators\": 100}"
+    }
+  ],
+  "selected_threshold": 0.4382849846156534,
+  "threshold_strategy": "Presisi terbaik dengan recall OOF minimal 80%; hanya untuk prioritas skrining",
+  "category_cutoffs": {
+    "low_upper": 0.2888523339651489,
+    "medium_upper": 0.5623843389662047,
+    "method": "tertil probabilitas out-of-fold data train; bukan ambang klinis"
+  },
+  "versions": {
+    "python": "3.10.6",
+    "scikit_learn": "1.7.2",
+    "pandas": "2.3.3",
+    "numpy": "2.2.6",
+    "joblib": "1.6.0"
+  },
+  "clinical_notice": "Eksperimen riset pada dataset Pima; bukan alat diagnosis dan belum divalidasi untuk populasi Indonesia.",
+  "eda": {
+    "data_source": "OpenML data_id=37",
+    "rows": 768,
+    "features": [
+      "Pregnancies",
+      "Glucose",
+      "BloodPressure",
+      "SkinThickness",
+      "Insulin",
+      "BMI",
+      "DiabetesPedigreeFunction",
+      "Age"
+    ],
+    "class_counts": {
+      "0": 500,
+      "1": 268
+    },
+    "zero_values_as_missing": {
+      "Glucose": 5,
+      "BloodPressure": 35,
+      "SkinThickness": 227,
+      "Insulin": 374,
+      "BMI": 11
+    },
+    "missing_as_stored": {
+      "Pregnancies": 0,
+      "Glucose": 0,
+      "BloodPressure": 0,
+      "SkinThickness": 0,
+      "Insulin": 0,
+      "BMI": 0,
+      "DiabetesPedigreeFunction": 0,
+      "Age": 0
+    }
+  }
+}

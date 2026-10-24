@@ -1,0 +1,101 @@
+# Asisten Diagnosis — Prototipe Riset Python
+
+Satu aplikasi Streamlit dengan dua modul:
+
+- **Modul A — Diagnosis banding dari gejala:** tiga kandidat statistik, probabilitas model, gejala pendukung, gejala yang belum dipilih tetapi sering muncul pada sampel kelas, pertanyaan lanjutan berbasis information gain, EDA, calibration/reliability curve, permutation importance, dan uji ketahanan.
+- **Modul B — Skrining indikasi risiko diabetes:** pipeline imputasi median + scaling, perbandingan Logistic Regression / Random Forest / Gradient Boosting, class weighting, threshold dengan perhatian pada recall, confusion matrix, ROC-AUC, ROC curve, serta penjelasan skor individual.
+
+> **Batas keselamatan:** Ini adalah prototipe edukasi/riset, bukan dokter, bukan diagnosis pasti, dan bukan alat kesehatan berizin. Setiap istilah terjemahan/penyakit dan pemetaan red flag ditandai untuk ditinjau tenaga medis. Jangan gunakan hasil untuk mengambil keputusan klinis tanpa dokter.
+
+## 1. Persiapan lingkungan
+
+Disarankan Python 3.10–3.12, lingkungan virtual, dan instalasi dependensi:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Linux/macOS
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+## 2. Dataset Modul A (Kaggle)
+
+1. Masuk ke halaman Kaggle: https://www.kaggle.com/datasets/kaushil268/disease-prediction-using-machine-learning
+2. Unduh dan ekstrak berkas `Training.csv` dan `Testing.csv` (akun Kaggle mungkin diperlukan).
+3. Letakkan file sebagai:
+
+```text
+data/Training.csv
+data/Testing.csv
+```
+
+`Training.csv` dipakai untuk EDA, deduplikasi, split 80/20 dan evaluasi utama. `Testing.csv` hanya dipakai untuk sanity check opsional dan **bukan** untuk memilih model atau melaporkan evaluasi utama.
+
+Jika file `Training.csv` tidak ditemukan, aplikasi training membuat data kecil **DATA DEMO SINTETIS** agar dapat menguji jalannya program. Label dan metrik demo tidak mempunyai makna klinis. Jika data lokal tersedia, kode tidak menggunakan data demo.
+
+Kode membersihkan kolom `Unnamed`, nama kolom ganda, kolom kosong, nilai gejala non-biner, serta menghitung dan membuang duplikat **sebelum split**. Kelas dengan kurang dari 3 baris unik tidak dipakai dalam split/CV utama dan dilaporkan karena evaluasi stratified tidak cukup didukung.
+
+Pemetaan nama berada di `config/symptom_mapping_id.json` dan `config/disease_mapping_id.json`. Nama yang tidak memiliki terjemahan menggunakan fallback yang ditandai *perlu ditinjau tenaga medis*. Semua terjemahan saat ini juga masih membutuhkan review klinis.
+
+## 3. Dataset Modul B (Pima)
+
+Urutan pemuatan: CSV lokal (`data/diabetes.csv`, `data/pima.csv`, atau `data/pima-indians-diabetes.csv`) → OpenML data ID 37 → URL publik alternatif → **DATA DEMO SINTETIS** bila semuanya gagal. Bila ingin melarang fallback demo, ubah pemanggilan `load_pima_local_or_remote(allow_demo=False)` di `train_screening.py`.
+
+Nilai nol pada `Glucose`, `BloodPressure`, `SkinThickness`, `Insulin`, dan `BMI` diganti menjadi nilai hilang sebelum pemodelan. Median imputer ditempatkan dalam `Pipeline`, sehingga statistik imputasi dipelajari di train/fold, bukan dari test.
+
+## 4. Training, evaluasi, aplikasi, dan tes
+
+Jalankan dari folder proyek:
+
+```bash
+python train_symptom.py
+python train_screening.py
+python evaluate.py
+pytest -q
+streamlit run app.py
+```
+
+Training bisa memerlukan waktu karena hyperparameter tuning, CV, kalibrasi, dan permutation importance. Setelah selesai, Streamlit akan dibuka pada URL lokal yang dicetak Streamlit. Jangan mengekspos aplikasi ini ke internet atau memasukkan identitas pasien.
+
+## 5. Keluaran training
+
+Folder `outputs/` berisi:
+
+- `symptom_model_comparison.csv`, `symptom_selected_model_test_metrics.csv`, `symptom_confusion_matrix.csv`, `symptom_top_confusions.csv`, `symptom_recall_per_disease.csv`, `symptom_reliability_bins.csv`, `symptom_robustness_tests.csv`, `symptom_permutation_importance.csv`, dan grafik EDA/kalibrasi/importance.
+- `screening_model_comparison.csv`, `screening_selected_test_metrics.csv`, `screening_confusion_matrix.csv`, `screening_permutation_importance.csv`, `screening_reliability_bins.csv`, serta grafik ROC/kalibrasi/importance.
+- laporan EDA dan metadata sumber data.
+
+Folder `models/` menyimpan joblib dan metadata versi library/waktu training. Model gejala menyimpan statistik training publik untuk menghitung prevalensi dan pertanyaan lanjut; input pasien aplikasi tidak disimpan.
+
+## 6. Desain evaluasi dan interpretasi
+
+- Modul A memilih model berdasar macro-F1 cross-validation; DummyClassifier adalah baseline saja. Top-1/top-3, recall per kelas, confusion matrix, Brier multi-class, reliability bins, dan top confusion pairs dihitung pada test holdout setelah deduplikasi.
+- Ambang `Belum cukup informasi` dihitung dari kuantil 10% probabilitas maksimum pada prediksi out-of-fold train. Itu hanya ambang statistik internal, bukan ambang diagnosis tervalidasi. Kurang dari tiga gejala selalu memicu penahanan dugaan.
+- Uji robustness menilai penghapusan 20%, 35%, 50% fitur, penambahan gejala acak, dan penyisaan 1–3 gejala positif. Dataset yang bersih dapat memberi hasil sangat tinggi; ini tidak membuktikan kinerja pada pasien nyata.
+- Modul B memilih model berdasar recall CV dan ROC-AUC sebagai metrik tambahan. Threshold dipilih dari OOF train dengan sasaran recall 80% bila dapat dicapai, lalu dilaporkan precision/specificity. Penurunan threshold umumnya meningkatkan recall dengan trade-off lebih banyak false positive.
+- Kategori Rendah/Sedang/Tinggi didasarkan pada tertil probabilitas OOF train, bukan batas klinis. Output `predict_proba` perlu validasi kalibrasi di data lokal.
+
+## 7. Privasi dan lapisan keselamatan
+
+- Input pasien hanya diproses di memori/session; kode aplikasi tidak menulis masukan pasien ke disk/database dan tidak mengirimkannya ke pihak ketiga. Jangan mengaktifkan logging input atau merekam sesi jika aplikasi dimodifikasi.
+- Informasi kesehatan termasuk data pribadi spesifik menurut UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi. Pernyataan ini bukan sertifikasi kepatuhan hukum; pengoperasian nyata perlu kajian hukum, keamanan, dan tata kelola. Sumber resmi: https://peraturan.bpk.go.id/Details/229798/uu-no-27-tahun-2022
+- Red flag pada `config/red_flags.json` diproses oleh `safety.py` **sebelum** inferensi hasil, sehingga skor ML tidak dapat menimpa peringatan. Pemetaan kolom aktual tergantung versi dataset; kontrol red flag manual tetap disediakan. Semua aturan perlu review klinis.
+- Pesan darurat: segera ke IGD atau hubungi 112 / 119. 119 adalah PSC darurat kesehatan Kemenkes. Layanan 112 diselenggarakan pemerintah daerah; cek ketersediaannya di wilayah setempat.
+- Peringatan statis untuk bayi/anak kecil, kehamilan, lansia, dan penyakit kronis ditampilkan sepanjang aplikasi.
+
+## 8. Keterbatasan dan validasi sebelum penggunaan nyata
+
+Dataset gejala yang banyak beredar mempunyai 4.920 baris, 132 gejala, 41 kelas, dan sering terlihat tepat 120 sampel per kelas; data ini tampak sangat terstruktur dan tidak memuat usia, jenis kelamin, lama/keparahan gejala, anamnesis, pemeriksaan fisik atau laboratorium. Dataset Pima hanya mencakup perempuan keturunan Pima berusia 21 tahun ke atas. Keduanya belum tentu representatif untuk populasi Indonesia.
+
+Sebelum pemakaian klinis, diperlukan: validasi prospektif/eksternal oleh dokter, evaluasi bias per subkelompok, kalibrasi di data lokal, audit keselamatan dan usability, keamanan/privasi, serta kajian pemenuhan regulasi alat kesehatan dan UU Pelindungan Data Pribadi. Prototipe ini tidak mengeluarkan obat/dosis dan tidak menggantikan diagnosis dokter.
+
+## 9. Sumber
+
+- Kaggle dataset (kaushil268): https://www.kaggle.com/datasets/kaushil268/disease-prediction-using-machine-learning
+- OpenML search: https://www.openml.org/search?type=data
+- Kemenkes RI — tanda stroke & tindakan cepat: https://keslan.kemkes.go.id/view_artikel/4465/kenali-stroke-iskemik-dan-bertindak-cepat
+- Kemenkes RI — PSC 119: https://kemkes.go.id/id/layanan/psc-119
+- Komdigi — layanan 112: https://layanan112.komdigi.go.id/tentang
+- WHO — diabetes: https://www.who.int/news-room/questions-and-answers/item/diabetes
+- BPK RI — UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi: https://peraturan.bpk.go.id/Details/229798/uu-no-27-tahun-2022

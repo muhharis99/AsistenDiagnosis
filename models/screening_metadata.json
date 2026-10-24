@@ -1,0 +1,91 @@
+{
+  "model": "RandomForest",
+  "data": {
+    "source": "generator sintetis lokal",
+    "dataset_mode": "DATA DEMO SINTETIS",
+    "is_demo": true,
+    "rows": 768,
+    "features": [
+      "Pregnancies",
+      "Glucose",
+      "BloodPressure",
+      "SkinThickness",
+      "Insulin",
+      "BMI",
+      "DiabetesPedigreeFunction",
+      "Age"
+    ],
+    "class_counts": {
+      "0": 436,
+      "1": 332
+    }
+  },
+  "train_rows": 614,
+  "test_rows": 154,
+  "cv_folds": 5,
+  "best_params": {
+    "clf__max_depth": 8,
+    "clf__min_samples_leaf": 3,
+    "clf__n_estimators": 120
+  },
+  "cv_recall_at_default_0_5": 0.47547169811320755,
+  "cv_roc_auc": 0.6282073518496817,
+  "test_metrics": {
+    "accuracy": 0.5194805194805194,
+    "precision": 0.4672897196261682,
+    "recall_sensitivity": 0.746268656716418,
+    "specificity": 0.3448275862068966,
+    "f1": 0.5747126436781609,
+    "roc_auc": 0.6620346543146338,
+    "threshold": 0.3701911845758187,
+    "tn": 30,
+    "fp": 57,
+    "fn": 17,
+    "tp": 50,
+    "model": "RandomForest",
+    "cv_recall_at_default_0_5": 0.47547169811320755,
+    "cv_roc_auc": 0.6282073518496817
+  },
+  "threshold": 0.3701911845758187,
+  "threshold_selection": {
+    "rule": "Precision tertinggi dengan recall OOF >= 80%",
+    "oof_precision": 0.47555555555555556,
+    "oof_recall": 0.8075471698113208,
+    "oof_specificity": 0.3237822349570201,
+    "target_recall": 0.8
+  },
+  "category_thresholds": {
+    "rendah_batas_atas": 0.38604386384544903,
+    "sedang_batas_atas": 0.4596820582477675,
+    "method": "Tertil probabilitas OOF pada training; bukan batas klinis."
+  },
+  "calibration": "CalibratedClassifierCV sigmoid; threshold/kategori dari OOF kalibrasi bertingkat",
+  "calibration_note": "Probabilitas dan kalibrasi dievaluasi pada holdout; validasi klinis/populasi lokal tetap diperlukan.",
+  "class_weight_note": "Logistic Regression dan Random Forest menggunakan class_weight='balanced'; GradientBoosting memakai sample_weight seimbang karena tidak memiliki parameter class_weight yang sama.",
+  "feature_names": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "training_medians": {
+    "Pregnancies": 2.0,
+    "Glucose": 116.08908294997664,
+    "BloodPressure": 71.05517049312746,
+    "SkinThickness": 25.26530797775282,
+    "Insulin": 79.66811105345195,
+    "BMI": 30.30927989024132,
+    "DiabetesPedigreeFunction": 0.3569596580622152,
+    "Age": 48.0
+  },
+  "is_demo": true,
+  "trained_at_utc": "2026-10-24T18:37:58.151705+00:00",
+  "python_version": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "scikit_learn_version": "1.8.0",
+  "numpy_version": "2.3.5",
+  "pandas_version": "2.2.3"
+}

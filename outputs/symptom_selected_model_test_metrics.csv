@@ -1,0 +1,2 @@
+model,cv_accuracy,cv_macro_f1,test_accuracy_top1,test_macro_f1,test_top3_accuracy,test_multiclass_brier
+BernoulliNB (kalibrasi untuk aplikasi),,,0.8372093023255814,0.8295454545454545,1.0,0.22737139591415492

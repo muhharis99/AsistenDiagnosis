@@ -1,0 +1,9 @@
+prognosis,recall,support_test
+DATA DEMO — pola sintetis A,0.6,5
+DATA DEMO — pola sintetis B,0.8,5
+DATA DEMO — pola sintetis C,1.0,5
+DATA DEMO — pola sintetis D,1.0,6
+DATA DEMO — pola sintetis E,1.0,5
+DATA DEMO — pola sintetis F,0.6,5
+DATA DEMO — pola sintetis G,1.0,6
+DATA DEMO — pola sintetis H,0.6666666666666666,6

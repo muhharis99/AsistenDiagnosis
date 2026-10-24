@@ -1,0 +1,9 @@
+__pycache__/
+.pytest_cache/
+.venv/
+*.py[cod]
+data/Training.csv
+data/Testing.csv
+data/diabetes.csv
+data/pima.csv
+data/pima-indians-diabetes.csv

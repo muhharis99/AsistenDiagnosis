@@ -1,0 +1,212 @@
+{
+  "project": "Pima Diabetes Early Screening",
+  "created_at_utc": "2026-10-24T18:13:26.593105+00:00",
+  "data_source": "OpenML data_id=37",
+  "dataset_rows": 768,
+  "target_distribution": {
+    "0": 500,
+    "1": 268
+  },
+  "features": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "target": "Outcome",
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "stratified": true
+  },
+  "cross_validation": {
+    "type": "StratifiedKFold",
+    "n_splits": 5,
+    "shuffle": true,
+    "random_state": 42
+  },
+  "selection_rule": "Prioritas recall CV; ROC-AUC sebagai pemecah seri",
+  "selected_model": "Gradient Boosting",
+  "selected_model_params": {
+    "model__learning_rate": 0.03,
+    "model__max_depth": 2,
+    "model__min_samples_leaf": 3,
+    "model__n_estimators": 100
+  },
+  "selected_model_cv_metrics": {
+    "recall_mean": 0.7335548172757476,
+    "precision_mean_at_0_5": 0.631385434441335,
+    "f1_mean_at_0_5": 0.6783020673774379,
+    "roc_auc_mean": 0.8305758582502769
+  },
+  "all_models_cv_metrics": {
+    "Logistic Regression": {
+      "recall_mean": 0.7244739756367664,
+      "precision_mean_at_0_5": 0.6429091684104471,
+      "f1_mean_at_0_5": 0.6791895767639055,
+      "roc_auc_mean": 0.8449363233665558
+    },
+    "Random Forest": {
+      "recall_mean": 0.7101882613510521,
+      "precision_mean_at_0_5": 0.6905052264808363,
+      "f1_mean_at_0_5": 0.6994182288299935,
+      "roc_auc_mean": 0.8306962901439647
+    },
+    "Gradient Boosting": {
+      "recall_mean": 0.7335548172757476,
+      "precision_mean_at_0_5": 0.631385434441335,
+      "f1_mean_at_0_5": 0.6783020673774379,
+      "roc_auc_mean": 0.8305758582502769
+    }
+  },
+  "cv_comparison_rows": [
+    {
+      "model": "Logistic Regression",
+      "cv_recall_mean": 0.7244739756367664,
+      "cv_recall_std": 0.055021711253144874,
+      "cv_precision_mean_at_0_5": 0.6429091684104471,
+      "cv_f1_mean_at_0_5": 0.6791895767639055,
+      "cv_roc_auc_mean": 0.8449363233665558,
+      "threshold_oof": 0.4285649607213072,
+      "oof_recall_at_threshold": 0.8037383177570093,
+      "oof_precision_at_threshold": 0.5830508474576271,
+      "best_params": "{\"model__C\": 0.1}"
+    },
+    {
+      "model": "Random Forest",
+      "cv_recall_mean": 0.7101882613510521,
+      "cv_recall_std": 0.013351642855460914,
+      "cv_precision_mean_at_0_5": 0.6905052264808363,
+      "cv_f1_mean_at_0_5": 0.6994182288299935,
+      "cv_roc_auc_mean": 0.8306962901439647,
+      "threshold_oof": 0.3942166377879987,
+      "oof_recall_at_threshold": 0.8084112149532711,
+      "oof_precision_at_threshold": 0.5986159169550173,
+      "best_params": "{\"model__max_depth\": 8, \"model__max_features\": \"sqrt\", \"model__min_samples_leaf\": 3, \"model__n_estimators\": 200}"
+    },
+    {
+      "model": "Gradient Boosting",
+      "cv_recall_mean": 0.7335548172757476,
+      "cv_recall_std": 0.019755573086137568,
+      "cv_precision_mean_at_0_5": 0.631385434441335,
+      "cv_f1_mean_at_0_5": 0.6783020673774379,
+      "cv_roc_auc_mean": 0.8305758582502769,
+      "threshold_oof": 0.4382849846156534,
+      "oof_recall_at_threshold": 0.8130841121495327,
+      "oof_precision_at_threshold": 0.5958904109589042,
+      "best_params": "{\"model__learning_rate\": 0.03, \"model__max_depth\": 2, \"model__min_samples_leaf\": 3, \"model__n_estimators\": 100}"
+    }
+  ],
+  "selected_threshold": 0.4382849846156534,
+  "threshold_strategy": "Presisi terbaik dengan recall OOF minimal 80%; hanya untuk prioritas skrining",
+  "category_cutoffs": {
+    "low_upper": 0.2888523339651489,
+    "medium_upper": 0.5623843389662047,
+    "method": "tertil probabilitas out-of-fold data train; bukan ambang klinis"
+  },
+  "versions": {
+    "python": "3.10.6",
+    "scikit_learn": "1.7.2",
+    "pandas": "2.3.3",
+    "numpy": "2.2.6",
+    "joblib": "1.6.0"
+  },
+  "clinical_notice": "Eksperimen riset pada dataset Pima; bukan alat diagnosis dan belum divalidasi untuk populasi Indonesia.",
+  "evaluation": {
+    "evaluated_at_utc": "2026-10-24T18:13:33.204533+00:00",
+    "test_rows": 154,
+    "metrics_by_model": [
+      {
+        "model": "Logistic Regression",
+        "threshold": 0.4285649607213072,
+        "accuracy": 0.7207792207792207,
+        "precision": 0.5714285714285714,
+        "recall_sensitivity": 0.8148148148148148,
+        "specificity": 0.67,
+        "f1": 0.6717557251908397,
+        "roc_auc": 0.8105555555555556,
+        "tn": 67,
+        "fp": 33,
+        "fn": 10,
+        "tp": 44,
+        "n_test": 154
+      },
+      {
+        "model": "Random Forest",
+        "threshold": 0.3942166377879987,
+        "accuracy": 0.7272727272727273,
+        "precision": 0.5769230769230769,
+        "recall_sensitivity": 0.8333333333333334,
+        "specificity": 0.67,
+        "f1": 0.6818181818181818,
+        "roc_auc": 0.8240740740740741,
+        "tn": 67,
+        "fp": 33,
+        "fn": 9,
+        "tp": 45,
+        "n_test": 154
+      },
+      {
+        "model": "Gradient Boosting",
+        "threshold": 0.4382849846156534,
+        "accuracy": 0.7467532467532467,
+        "precision": 0.6,
+        "recall_sensitivity": 0.8333333333333334,
+        "specificity": 0.7,
+        "f1": 0.6976744186046512,
+        "roc_auc": 0.8175925925925925,
+        "tn": 70,
+        "fp": 30,
+        "fn": 9,
+        "tp": 45,
+        "n_test": 154
+      }
+    ],
+    "selected_model_test_metrics": {
+      "model": "Gradient Boosting",
+      "threshold": 0.4382849846156534,
+      "accuracy": 0.7467532467532467,
+      "precision": 0.6,
+      "recall_sensitivity": 0.8333333333333334,
+      "specificity": 0.7,
+      "f1": 0.6976744186046512,
+      "roc_auc": 0.8175925925925925,
+      "tn": 70,
+      "fp": 30,
+      "fn": 9,
+      "tp": 45,
+      "n_test": 154
+    },
+    "permutation_importance_top_features": [
+      {
+        "feature": "Glucose",
+        "importance_mean": 0.12020370370370363,
+        "importance_std": 0.02961115743632444
+      },
+      {
+        "feature": "BMI",
+        "importance_mean": 0.05675925925925922,
+        "importance_std": 0.018580890333800157
+      },
+      {
+        "feature": "Age",
+        "importance_mean": 0.024314814814814754,
+        "importance_std": 0.007766769105101673
+      },
+      {
+        "feature": "Pregnancies",
+        "importance_mean": 0.00623611111111107,
+        "importance_std": 0.003869802700705391
+      },
+      {
+        "feature": "Insulin",
+        "importance_mean": 0.0036203703703703237,
+        "importance_std": 0.0050786762719134855
+      }
+    ]
+  }
+}

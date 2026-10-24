@@ -1,0 +1,1 @@
+Laporan EDA dibuat oleh `python train.py`; tabel metrik test, grafik ROC/confusion matrix, dan permutation importance dibuat oleh `python evaluate.py` setelah training berhasil. Folder ini tidak berisi hasil eksperimen Pima yang dikarang atau hasil dari data sintetis.

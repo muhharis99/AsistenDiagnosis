@@ -1,0 +1,56 @@
+{
+  "selected_model": "Gradient Boosting",
+  "selected_model_test_metrics": {
+    "model": "Gradient Boosting",
+    "threshold": 0.4382849846156534,
+    "accuracy": 0.7467532467532467,
+    "precision": 0.6,
+    "recall_sensitivity": 0.8333333333333334,
+    "specificity": 0.7,
+    "f1": 0.6976744186046512,
+    "roc_auc": 0.8175925925925925,
+    "tn": 70,
+    "fp": 30,
+    "fn": 9,
+    "tp": 45,
+    "n_test": 154
+  },
+  "test_rows": 154,
+  "test_positive_count": 54,
+  "test_negative_count": 100,
+  "interpretation": {
+    "tn": "pasien berlabel negatif yang diprediksi negatif",
+    "fp": "pasien berlabel negatif yang diprediksi positif; dapat memicu pemeriksaan lanjutan yang tidak perlu",
+    "fn": "pasien berlabel positif yang diprediksi negatif; penting diperhatikan karena skrining dapat melewatkan kasus",
+    "tp": "pasien berlabel positif yang diprediksi positif",
+    "roc_auc": "kemampuan membedakan kelas pada berbagai threshold; bukan ukuran kalibrasi probabilitas"
+  },
+  "top_features": [
+    {
+      "feature": "Glucose",
+      "importance_mean": 0.12020370370370363,
+      "importance_std": 0.02961115743632444
+    },
+    {
+      "feature": "BMI",
+      "importance_mean": 0.05675925925925922,
+      "importance_std": 0.018580890333800157
+    },
+    {
+      "feature": "Age",
+      "importance_mean": 0.024314814814814754,
+      "importance_std": 0.007766769105101673
+    },
+    {
+      "feature": "Pregnancies",
+      "importance_mean": 0.00623611111111107,
+      "importance_std": 0.003869802700705391
+    },
+    {
+      "feature": "Insulin",
+      "importance_mean": 0.0036203703703703237,
+      "importance_std": 0.0050786762719134855
+    }
+  ],
+  "caveat": "Metrik berasal dari satu split test pada dataset Pima; bukan bukti validasi klinis."
+}

@@ -1,0 +1,21 @@
+{
+  "review_status": "PERLU DITINJAU TENAGA MEDIS",
+  "display_message": "GEJALA GAWAT DARURAT TERPILIH. Jangan menunggu hasil model. Segera ke IGD atau hubungi 112 / 119. Ketersediaan layanan 112 bergantung pada implementasi pemerintah daerah; 119 adalah layanan darurat kesehatan PSC.",
+  "red_flags": [
+    {"id":"chest_pain","label":"Nyeri dada","dataset_columns":["chest_pain"],"aliases":["nyeri dada","chest pain"],"needs_medical_review":true},
+    {"id":"severe_breathlessness","label":"Sesak napas berat","dataset_columns":["breathlessness","shortness_of_breath","dyspnea"],"aliases":["sesak napas berat","sesak napas","breathlessness","shortness of breath","dyspnea"],"needs_medical_review":true},
+    {"id":"reduced_consciousness","label":"Penurunan kesadaran","dataset_columns":["altered_sensorium","coma","loss_of_consciousness"],"aliases":["penurunan kesadaran","altered sensorium","coma","loss of consciousness"],"needs_medical_review":true},
+    {"id":"sudden_paralysis_face","label":"Kelumpuhan atau wajah mencong mendadak","dataset_columns":["weakness_of_one_body_side","paralysis","slurred_speech"],"aliases":["kelumpuhan mendadak","wajah mencong","weakness of one body side","paralysis","slurred speech","bicara pelo mendadak"],"needs_medical_review":true},
+    {"id":"seizure","label":"Kejang","dataset_columns":["seizures","seizure","convulsion"],"aliases":["kejang","seizures","seizure","convulsion"],"needs_medical_review":true},
+    {"id":"severe_bleeding","label":"Perdarahan hebat","dataset_columns":["stomach_bleeding","bloody_stool","blood_in_sputum"],"aliases":["perdarahan hebat","severe bleeding","hemorrhage"],"needs_medical_review":true},
+    {"id":"vomiting_blood","label":"Muntah darah","dataset_columns":["vomiting_blood","hematemesis"],"aliases":["muntah darah","vomiting blood","hematemesis"],"needs_medical_review":true}
+  ],
+  "static_warnings": [
+    "Untuk bayi/anak kecil, ibu hamil, lansia, atau orang dengan penyakit kronis, jangan jadikan hasil aplikasi sebagai acuan; langsung konsultasikan ke dokter atau fasilitas kesehatan."
+  ],
+  "sources": [
+    {"title":"Kemenkes RI — Kenali stroke iskemik dan bertindak cepat","url":"https://keslan.kemkes.go.id/view_artikel/4465/kenali-stroke-iskemik-dan-bertindak-cepat"},
+    {"title":"Kemenkes RI — PSC 119","url":"https://kemkes.go.id/id/layanan/psc-119"},
+    {"title":"Komdigi — Tentang Layanan Panggilan Darurat 112","url":"https://layanan112.komdigi.go.id/tentang"}
+  ]
+}

@@ -1,0 +1,4 @@
+model,cv_recall_mean,cv_recall_std,cv_precision_mean_at_0_5,cv_f1_mean_at_0_5,cv_roc_auc_mean,threshold_oof,oof_recall_at_threshold,oof_precision_at_threshold,best_params
+Gradient Boosting,0.7335548172757476,0.019755573086137568,0.631385434441335,0.6783020673774379,0.8305758582502769,0.4382849846156534,0.8130841121495327,0.5958904109589042,"{""model__learning_rate"": 0.03, ""model__max_depth"": 2, ""model__min_samples_leaf"": 3, ""model__n_estimators"": 100}"
+Logistic Regression,0.7244739756367664,0.055021711253144874,0.6429091684104471,0.6791895767639055,0.8449363233665558,0.4285649607213072,0.8037383177570093,0.5830508474576271,"{""model__C"": 0.1}"
+Random Forest,0.7101882613510521,0.013351642855460914,0.6905052264808363,0.6994182288299935,0.8306962901439647,0.3942166377879987,0.8084112149532711,0.5986159169550173,"{""model__max_depth"": 8, ""model__max_features"": ""sqrt"", ""model__min_samples_leaf"": 3, ""model__n_estimators"": 200}"

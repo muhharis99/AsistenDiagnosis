@@ -1,0 +1,22 @@
+[
+  {
+    "source":"generator sintetis lokal",
+    "dataset_mode":"DATA DEMO SINTETIS",
+    "is_demo":true,
+    "rows":768,
+    "features":[
+      "Pregnancies",
+      "Glucose",
+      "BloodPressure",
+      "SkinThickness",
+      "Insulin",
+      "BMI",
+      "DiabetesPedigreeFunction",
+      "Age"
+    ],
+    "class_counts":{
+      "0":436,
+      "1":332
+    }
+  }
+]

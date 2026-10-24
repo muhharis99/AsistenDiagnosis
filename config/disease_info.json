@@ -1,0 +1,16 @@
+{
+  "review_status": "PERLU DITINJAU TENAGA MEDIS",
+  "default": {
+    "description": "Deskripsi khusus penyakit belum diisi karena pemetaan nama pada dataset tidak diverifikasi sebagai definisi klinis. Tinjau oleh tenaga medis sebelum digunakan.",
+    "general_advice": [
+      "Catat kapan gejala mulai, lamanya, tingkat keparahan, dan perubahan yang terjadi untuk disampaikan saat konsultasi.",
+      "Konsultasikan keluhan kepada dokter atau fasilitas kesehatan untuk anamnesis, pemeriksaan fisik, dan pemeriksaan lanjutan yang sesuai.",
+      "Jika timbul gejala gawat darurat, jangan menunggu hasil aplikasi; segera ke IGD atau hubungi layanan darurat setempat."
+    ],
+    "sources": [
+      {"title":"Kemenkes RI — Kenali stroke iskemik dan bertindak cepat","url":"https://keslan.kemkes.go.id/view_artikel/4465/kenali-stroke-iskemik-dan-bertindak-cepat"},
+      {"title":"WHO — Diabetes: pertanyaan dan jawaban","url":"https://www.who.int/news-room/questions-and-answers/item/diabetes"}
+    ]
+  },
+  "conditions": {}
+}

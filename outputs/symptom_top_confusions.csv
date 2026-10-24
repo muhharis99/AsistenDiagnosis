@@ -1,0 +1,7 @@
+label_asli,diprediksi_sebagai,jumlah
+DATA DEMO — pola sintetis A,DATA DEMO — pola sintetis B,2
+DATA DEMO — pola sintetis B,DATA DEMO — pola sintetis F,1
+DATA DEMO — pola sintetis F,DATA DEMO — pola sintetis C,1
+DATA DEMO — pola sintetis F,DATA DEMO — pola sintetis H,1
+DATA DEMO — pola sintetis H,DATA DEMO — pola sintetis A,1
+DATA DEMO — pola sintetis H,DATA DEMO — pola sintetis B,1

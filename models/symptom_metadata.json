@@ -1,0 +1,275 @@
+{
+  "model": "BernoulliNB",
+  "model_path": "C:\\Users\\Win10\\Downloads\\skrining_diabetes_pima\\models\\symptom_model.joblib",
+  "dataset": {
+    "source_rows": 224,
+    "rows_after_cleaning": 215,
+    "duplicate_rows_removed": 9,
+    "duplicate_columns_removed": [],
+    "feature_count": 32,
+    "class_count": 8,
+    "class_counts": {
+      "DATA DEMO — pola sintetis A": 26,
+      "DATA DEMO — pola sintetis B": 27,
+      "DATA DEMO — pola sintetis C": 26,
+      "DATA DEMO — pola sintetis D": 28,
+      "DATA DEMO — pola sintetis E": 26,
+      "DATA DEMO — pola sintetis F": 26,
+      "DATA DEMO — pola sintetis G": 28,
+      "DATA DEMO — pola sintetis H": 28
+    },
+    "source": "generator sintetis lokal",
+    "dataset_mode": "DATA DEMO SINTETIS",
+    "is_demo": true,
+    "note": "Data DEMO hanya menguji perangkat lunak; dilarang menafsirkan metriknya sebagai kinerja medis."
+  },
+  "split": {
+    "rows_after_deduplication_before_rare_class_filter": 215,
+    "rows_used": 215,
+    "train_rows": 172,
+    "test_rows": 43,
+    "classes_used": 8,
+    "dropped_classes_less_than_3_rows": [],
+    "cross_split_exact_row_overlap": 0,
+    "minimum_train_class_count": 21
+  },
+  "cv_folds": 5,
+  "cv_policy": "Stratified 5-fold; diturunkan dari jumlah minimum kelas train",
+  "model_search": {
+    "DummyClassifier": {
+      "best_params": "baseline tanpa tuning",
+      "best_cv_macro_f1": 0.026045883940620785
+    },
+    "BernoulliNB": {
+      "best_params": {
+        "clf__alpha": 2.0
+      },
+      "best_cv_macro_f1": 0.924608585858586
+    },
+    "LogisticRegression": {
+      "best_params": {
+        "clf__C": 0.1
+      },
+      "best_cv_macro_f1": 0.9078733766233766
+    },
+    "RandomForest": {
+      "best_params": {
+        "clf__max_features": "sqrt",
+        "clf__min_samples_leaf": 2,
+        "clf__n_estimators": 180
+      },
+      "best_cv_macro_f1": 0.8705808080808082
+    },
+    "GradientBoosting": {
+      "best_params": {
+        "clf__learning_rate": 0.1,
+        "clf__max_depth": 1,
+        "clf__n_estimators": 80
+      },
+      "best_cv_macro_f1": 0.8819300144300145
+    }
+  },
+  "selected_test_metrics": {
+    "model": "BernoulliNB (kalibrasi untuk aplikasi)",
+    "cv_accuracy": null,
+    "cv_macro_f1": null,
+    "test_accuracy_top1": 0.8372093023255814,
+    "test_macro_f1": 0.8295454545454545,
+    "test_top3_accuracy": 1.0,
+    "test_multiclass_brier": 0.22737139591415492
+  },
+  "confidence_threshold": 0.4827053681051372,
+  "threshold_rule": "Kuantil 10% maksimum probabilitas top-1 terkalibrasi dari prediksi out-of-fold bertingkat pada training; bukan ambang klinis.",
+  "calibration": "CalibratedClassifierCV sigmoid; threshold dari OOF kalibrasi bertingkat",
+  "calibration_note": "Brier multi-class dihitung pada holdout; kurva reliabilitas top-1 bersifat deskriptif. Data kecil/bersih dapat membuat kalibrasi tidak stabil.",
+  "robustness_note": "Uji ketahanan pada test holdout yang sama; semua gangguan bersifat sintetis dan tidak mensimulasikan missingness klinis yang tervalidasi.",
+  "robustness_scenarios": [
+    {
+      "scenario": "Baseline (tanpa gangguan)",
+      "top1_accuracy": 0.8372093023255814,
+      "top3_accuracy": 1.0
+    },
+    {
+      "scenario": "Hapus 20% fitur acak (rerata 3 ulangan)",
+      "top1_accuracy": 0.7674418604651163,
+      "top3_accuracy": 0.9689922480620154
+    },
+    {
+      "scenario": "Hapus 35% fitur acak (rerata 3 ulangan)",
+      "top1_accuracy": 0.689922480620155,
+      "top3_accuracy": 0.9534883720930232
+    },
+    {
+      "scenario": "Hapus 50% fitur acak (rerata 3 ulangan)",
+      "top1_accuracy": 0.5581395348837209,
+      "top3_accuracy": 0.7596899224806202
+    },
+    {
+      "scenario": "Tambah 1-3 gejala acak",
+      "top1_accuracy": 0.813953488372093,
+      "top3_accuracy": 1.0
+    },
+    {
+      "scenario": "Hanya 1 gejala positif per baris",
+      "top1_accuracy": 0.4883720930232558,
+      "top3_accuracy": 0.813953488372093
+    },
+    {
+      "scenario": "Hanya 2 gejala positif per baris",
+      "top1_accuracy": 0.5116279069767442,
+      "top3_accuracy": 0.6976744186046512
+    },
+    {
+      "scenario": "Hanya 3 gejala positif per baris",
+      "top1_accuracy": 0.6976744186046512,
+      "top3_accuracy": 0.9302325581395349
+    }
+  ],
+  "sanity_check_testing_csv": {
+    "used_for_model_selection": false,
+    "status": "Testing.csv tidak ditemukan; sanity check dilewati."
+  },
+  "feature_count": 32,
+  "classes": [
+    "DATA DEMO — pola sintetis A",
+    "DATA DEMO — pola sintetis B",
+    "DATA DEMO — pola sintetis C",
+    "DATA DEMO — pola sintetis D",
+    "DATA DEMO — pola sintetis E",
+    "DATA DEMO — pola sintetis F",
+    "DATA DEMO — pola sintetis G",
+    "DATA DEMO — pola sintetis H"
+  ],
+  "feature_names": [
+    "itching",
+    "skin_rash",
+    "continuous_sneezing",
+    "chills",
+    "joint_pain",
+    "stomach_pain",
+    "vomiting",
+    "fatigue",
+    "cough",
+    "high_fever",
+    "breathlessness",
+    "headache",
+    "nausea",
+    "loss_of_appetite",
+    "back_pain",
+    "diarrhoea",
+    "mild_fever",
+    "yellowing_of_eyes",
+    "chest_pain",
+    "dizziness",
+    "slurred_speech",
+    "loss_of_balance",
+    "altered_sensorium",
+    "seizure",
+    "shortness_of_breath",
+    "vomiting_blood",
+    "weight_loss",
+    "excessive_hunger",
+    "polyuria",
+    "runny_nose",
+    "redness_of_eyes",
+    "muscle_pain"
+  ],
+  "training_data_medians": {
+    "itching": 0.0,
+    "skin_rash": 0.0,
+    "continuous_sneezing": 0.0,
+    "chills": 0.0,
+    "joint_pain": 0.0,
+    "stomach_pain": 0.0,
+    "vomiting": 0.0,
+    "fatigue": 0.0,
+    "cough": 0.0,
+    "high_fever": 0.0,
+    "breathlessness": 0.0,
+    "headache": 0.0,
+    "nausea": 0.0,
+    "loss_of_appetite": 0.0,
+    "back_pain": 0.0,
+    "diarrhoea": 0.0,
+    "mild_fever": 0.0,
+    "yellowing_of_eyes": 0.0,
+    "chest_pain": 0.0,
+    "dizziness": 0.0,
+    "slurred_speech": 0.0,
+    "loss_of_balance": 0.0,
+    "altered_sensorium": 0.0,
+    "seizure": 0.0,
+    "shortness_of_breath": 0.0,
+    "vomiting_blood": 0.0,
+    "weight_loss": 0.0,
+    "excessive_hunger": 0.0,
+    "polyuria": 0.0,
+    "runny_nose": 0.0,
+    "redness_of_eyes": 0.0,
+    "muscle_pain": 0.0
+  },
+  "red_flag_column_map": {
+    "chest_pain": {
+      "label": "Nyeri dada",
+      "columns_found": [
+        "chest_pain"
+      ],
+      "manual_ui_control_available": true,
+      "needs_medical_review": true
+    },
+    "severe_breathlessness": {
+      "label": "Sesak napas berat",
+      "columns_found": [
+        "breathlessness",
+        "shortness_of_breath"
+      ],
+      "manual_ui_control_available": true,
+      "needs_medical_review": true
+    },
+    "reduced_consciousness": {
+      "label": "Penurunan kesadaran",
+      "columns_found": [
+        "altered_sensorium"
+      ],
+      "manual_ui_control_available": true,
+      "needs_medical_review": true
+    },
+    "sudden_paralysis_face": {
+      "label": "Kelumpuhan atau wajah mencong mendadak",
+      "columns_found": [
+        "slurred_speech"
+      ],
+      "manual_ui_control_available": true,
+      "needs_medical_review": true
+    },
+    "seizure": {
+      "label": "Kejang",
+      "columns_found": [
+        "seizure"
+      ],
+      "manual_ui_control_available": true,
+      "needs_medical_review": true
+    },
+    "severe_bleeding": {
+      "label": "Perdarahan hebat",
+      "columns_found": [],
+      "manual_ui_control_available": true,
+      "needs_medical_review": true
+    },
+    "vomiting_blood": {
+      "label": "Muntah darah",
+      "columns_found": [
+        "vomiting_blood"
+      ],
+      "manual_ui_control_available": true,
+      "needs_medical_review": true
+    }
+  },
+  "warnings": [],
+  "is_demo": true,
+  "trained_at_utc": "2026-10-24T18:48:11.453860+00:00",
+  "python_version": "3.10.6 (tags/v3.10.6:9c7b4bd, Aug  1 2022, 21:53:49) [MSC v.1932 64 bit (AMD64)]",
+  "scikit_learn_version": "1.7.2",
+  "numpy_version": "2.2.6",
+  "pandas_version": "2.3.3"
+}
