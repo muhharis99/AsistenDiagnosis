@@ -136,3 +136,28 @@ pytest -q
 ```
 
 **Penting:** RME Fase 1 adalah prototipe edukasi/riset, bukan penggunaan klinis. AI belum dihubungkan di fase ini, diagnosis tidak diisi otomatis, SATUSEHAT belum mengirim data, dan tanda tangan elektronik hanya simulasi bukan TTE tersertifikasi. Nama/NIK dienkripsi pada level field; catatan klinis belum mendapat enkripsi field-level. Amankan file database/host dan jangan expose ke jaringan publik. Belum ada klaim kepatuhan penuh atau sertifikasi.
+
+
+## Fase 2 — Asisten Diagnosis di alur dokter
+
+Panel AI kini tersedia pada tab **Pemeriksaan → Asesmen & Diagnosis** pada entry point RME, yaitu file rme_app.py. AI hanya mengeluarkan sampai tiga dugaan statistik untuk ditinjau dokter. Aksi "Catat sebagai kandidat hipotesis kerja", "Ubah saran", dan "Abaikan saran" masuk ke tabel tinjauan dan audit; tidak satu pun membuat diagnosis final atau mengisi diagnosis ICD-10.
+
+### Consent, red flag, dan kelompok khusus
+
+- Service memeriksa peran Dokter (DPJP), status kunjungan, penugasan DPJP dan consent ai_assist sebelum inferensi.
+- Pemeriksaan red flag tersedia terpisah dari tombol AI agar tetap berfungsi meskipun consent AI belum aktif. Red flag memblokir inferensi dan menampilkan peringatan darurat.
+- Kurang dari tiga gejala, usia di bawah 18/65 ke atas, kehamilan atau penyakit kronis yang ditandai, serta skor top-1 di bawah threshold akan menahan dugaan atau memblokir inferensi.
+- Bila skor tertinggi di bawah threshold, aplikasi menyembunyikan daftar kandidat dan menampilkan "Belum cukup informasi".
+- Nama/NIK tidak dikirim ke model. Saran menyimpan ID gejala, keluaran, penjelasan, versi model/kode, hash SHA-256 artefak dan data latih, waktu UTC serta status demo.
+- Model demo saat ini bersumber dari generator sintetis. Skor dan metriknya bukan bukti performa klinis. Dokter tetap menetapkan diagnosis; pemetaan ICD-10 adalah fase selanjutnya.
+
+Dokumentasi lengkap: [docs/FASE_2_AI.md](docs/FASE_2_AI.md) dan [docs/model_card.md](docs/model_card.md).
+
+Akun demo RME pada database baru dibuat oleh scripts/init_demo.py; seeder menyiapkan satu pasien fiktif dengan consent AI-assist aktif untuk demonstrasi lokal. Jika database demo lama sudah mempunyai pasien, seeder tidak mengubah consent yang sudah ada. Buat pasien demo baru melalui menu Pendaftaran dan catat persetujuannya secara terpisah.
+
+Jalankan tes:
+
+    python -m compileall -q rme rme_app.py scripts tests
+    pytest -q
+
+Fase ini masih prototipe lokal dengan data fiktif; tidak ada klaim validasi klinis, kepatuhan penuh regulasi, atau integrasi SATUSEHAT.
