@@ -1,6 +1,7 @@
 """Guarded SATUSEHAT sandbox MPI search and outbox transmission."""
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from datetime import timezone
