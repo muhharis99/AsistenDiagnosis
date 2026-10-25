@@ -392,7 +392,9 @@ def _prepare_clinical_impression(
     encounter_id = _verified_mapping(session, "Encounter", str(visit.id))
     assessor_local = resume.signed_by or resume.created_by
     practitioner_id = _verified_mapping(session, "Practitioner", str(assessor_local))
-    _verified_mapping(session, "Organization", str(visit.facility_id), expected_external_id=organization_ihs)
+    organization_id = _verified_mapping(
+        session, "Organization", str(visit.facility_id), expected_external_id=organization_ihs
+    )
     demo_id = str(payload.get("id") or "")
     if not demo_id.startswith(f"demo-clinical-impression-{visit.id}-v"):
         raise SATUSEHATWorkflowError("ID ClinicalImpression demo tidak dikenal.")
@@ -408,6 +410,13 @@ def _prepare_clinical_impression(
                 raise SATUSEHATWorkflowError("Referensi Observation dalam ClinicalImpression tidak valid.")
             item["reference"] = f"Observation/{_external_id_for_demo_resource(session, visit.id, 'Observation', match.group(1))}"
     payload.pop("id", None)
+    # A deterministic identifier allows a read-only search to reconcile a POST
+    # whose response was lost, without repeating the write.
+    payload["identifier"] = [{
+        "use": "official",
+        "system": f"http://sys-ids.kemkes.go.id/clinicalimpression/{organization_id}",
+        "value": f"clinical-impression-{visit.id}-v{getattr(resume, 'version', 1)}",
+    }]
     payload["subject"] = {"reference": f"Patient/{patient_id}"}
     payload["encounter"] = {"reference": f"Encounter/{encounter_id}"}
     payload["assessor"] = {"reference": f"Practitioner/{practitioner_id}"}
@@ -754,6 +763,152 @@ def transmit_outbox_item_sandbox(
     session.commit()
     session.refresh(transmission)
     return transmission
+
+
+def reconcile_uncertain_transmission(
+    session: Session,
+    user: User,
+    outbox_id: int,
+    *,
+    client: SATUSEHATClient | None = None,
+    confirmed_demo_only: bool,
+) -> dict[str, Any]:
+    """Reconcile one uncertain write by reading the sandbox; never replays POST/PUT."""
+    require_permission(user, "satusehat:manage")
+    if not confirmed_demo_only:
+        raise SATUSEHATWorkflowError("Konfirmasi rekonsiliasi hanya untuk data uji fiktif wajib dicentang.")
+    api = client or SATUSEHATClient()
+    if not api.network_enabled or api.mode != "sandbox":
+        raise SATUSEHATWorkflowError("Rekonsiliasi jaringan hanya diizinkan untuk sandbox dengan opt-in eksplisit.")
+
+    outbox = session.get(OutboxSync, outbox_id)
+    if outbox is None or not outbox.is_demo:
+        raise SATUSEHATWorkflowError("Outbox demo tidak ditemukan.")
+    transmission = session.scalar(
+        select(SATUSEHATTransmission).where(SATUSEHATTransmission.outbox_id == outbox_id)
+    )
+    if transmission is None or transmission.status != "uncertain":
+        raise SATUSEHATWorkflowError("Hanya transmisi berstatus uncertain yang dapat direkonsiliasi.")
+    payload = prepare_sandbox_payload(session, user, outbox_id, api)
+    candidates: list[dict[str, Any]] = []
+    reported_total: int | None = None
+    response_status: int | None = None
+    lookup_method = "identifier_search"
+
+    try:
+        if outbox.resource_type == "Encounter":
+            external_id = str(payload.get("id") or "")
+            response = api.get_resource("Encounter", external_id)
+            response_status = response.status_code
+            resource = response.payload
+            if resource.get("resourceType") == "Encounter" and resource.get("id") == external_id:
+                candidates = [resource]
+            reported_total = len(candidates)
+            lookup_method = "read_mapped_encounter"
+        else:
+            identifiers = payload.get("identifier")
+            identifier = next(
+                (
+                    item for item in (identifiers if isinstance(identifiers, list) else [])
+                    if isinstance(item, dict)
+                    and isinstance(item.get("system"), str)
+                    and isinstance(item.get("value"), str)
+                ),
+                None,
+            )
+            if identifier is None:
+                raise SATUSEHATWorkflowError(
+                    "Payload tidak mempunyai identifier deterministik untuk rekonsiliasi; tinjau manual."
+                )
+            response = api.search_resource_by_identifier(
+                outbox.resource_type, identifier["system"], identifier["value"]
+            )
+            response_status = response.status_code
+            bundle = response.payload
+            if bundle.get("resourceType") != "Bundle":
+                raise SATUSEHATWorkflowError(
+                    "Respons pencarian rekonsiliasi bukan Bundle FHIR; status tetap uncertain."
+                )
+            reported_total = bundle.get("total") if isinstance(bundle.get("total"), int) else None
+            for entry in bundle.get("entry") or []:
+                resource = (entry or {}).get("resource") or {}
+                if resource.get("resourceType") != outbox.resource_type:
+                    continue
+                external_id = resource.get("id")
+                if not isinstance(external_id, str) or not is_safe_external_id(external_id):
+                    continue
+                server_identifiers = resource.get("identifier") or []
+                has_same_identifier = any(
+                    isinstance(item, dict)
+                    and item.get("system") == identifier["system"]
+                    and item.get("value") == identifier["value"]
+                    for item in server_identifiers
+                )
+                if has_same_identifier:
+                    candidates.append(resource)
+    except SATUSEHATClientError as exc:
+        # A missing/failed read is not proof that the original write failed.
+        # Keep uncertain and require a future manual reconciliation attempt.
+        append_audit(
+            session, user, "satusehat.transmission_reconciliation", "OutboxSync", outbox_id,
+            {"resource_type": outbox.resource_type, "status": "uncertain",
+             "lookup_method": lookup_method, "lookup_http_status": exc.status_code,
+             "match_count": 0, "payload_body_logged": False},
+        )
+        session.commit()
+        return {
+            "status": "uncertain",
+            "resource_type": outbox.resource_type,
+            "match_count": 0,
+            "reconciled": False,
+            "message": "Respons baca sandbox belum membuktikan hasil tulis; status tetap uncertain.",
+        }
+
+    unique_match = (
+        len(candidates) == 1
+        and reported_total == 1
+        and response_status is not None
+        and 200 <= response_status < 300
+    )
+    if unique_match:
+        resource = candidates[0]
+        transmission.status = "succeeded"
+        transmission.external_resource_id = str(resource["id"])
+        transmission.http_status = response_status
+        transmission.operation_outcome_codes_json = "[]"
+        transmission.response_summary = (
+            f"Rekonsiliasi HTTP {response_status}; resource dikonfirmasi melalui pembacaan sandbox."
+        )
+        transmission.completed_at = utc_now()
+        transmission.updated_at = utc_now()
+        final_status = "succeeded"
+        message = "Resource ditemukan secara unik di sandbox; status lokal direkonsiliasi menjadi succeeded."
+    else:
+        # Zero results can reflect indexing delay; multiple results are ambiguous.
+        # Neither condition authorizes another POST/PUT or a local success claim.
+        final_status = "uncertain"
+        if reported_total == 0 or not candidates:
+            message = "Resource belum ditemukan; status tetap uncertain dan tidak ada pengiriman ulang."
+        else:
+            message = "Hasil pencarian ambigu; status tetap uncertain untuk rekonsiliasi manual."
+
+    append_audit(
+        session, user, "satusehat.transmission_reconciliation", "OutboxSync", outbox_id,
+        {"resource_type": outbox.resource_type, "status": final_status,
+         "lookup_method": lookup_method, "lookup_http_status": response_status,
+         "reported_total": reported_total, "match_count": len(candidates),
+         "payload_body_logged": False},
+    )
+    session.commit()
+    session.refresh(transmission)
+    return {
+        "status": final_status,
+        "resource_type": outbox.resource_type,
+        "match_count": len(candidates),
+        "reconciled": unique_match,
+        "external_resource_id": transmission.external_resource_id if unique_match else None,
+        "message": message,
+    }
 
 
 def list_transmissions(session: Session, user) -> list[SATUSEHATTransmission]:
