@@ -213,24 +213,53 @@ class SATUSEHATClient:
         except requests.RequestException as exc:
             raise SATUSEHATClientError(
                 "Request sandbox gagal; status penerimaan resource belum dapat dipastikan.",
-                uncertain=verb == "POST",
+                uncertain=verb in {"POST", "PUT"},
             ) from exc
         status = int(getattr(response, "status_code", 0))
-        payload = self._json_payload(response)
+        response_headers = dict(getattr(response, "headers", {}) or {})
+
+        # A redirect is never followed and its body is not trusted/parsed.
         if 300 <= status < 400:
             raise SATUSEHATClientError(
                 "Redirect dari endpoint sandbox ditolak.",
                 status_code=status,
-                uncertain=verb == "POST",
+                uncertain=verb in {"POST", "PUT"},
             )
+
+        # Preserve the HTTP status even when an error response is not JSON.
         if status < 200 or status >= 300:
+            error_payload: dict[str, Any] = {}
+            try:
+                error_payload = self._json_payload(response)
+            except SATUSEHATClientError:
+                pass
             raise SATUSEHATClientError(
                 "Permintaan ke API sandbox ditolak.",
                 status_code=status,
-                issue_codes=self._issue_codes(payload),
-                uncertain=(verb == "POST" and status >= 500),
+                issue_codes=self._issue_codes(error_payload),
+                uncertain=(verb in {"POST", "PUT"} and status >= 500),
             )
-        return ApiResponse(status, payload, dict(getattr(response, "headers", {}) or {}))
+
+        # FHIR update acknowledgements may legitimately be 204/empty. PUT uses
+        # a server-mapped ID already checked against the URL, so its response
+        # body is optional. POST still needs a parseable body or Location header
+        # downstream; malformed success bodies must remain uncertain.
+        if status == 204 or verb == "PUT":
+            try:
+                payload = self._json_payload(response)
+            except SATUSEHATClientError:
+                payload = {}
+        else:
+            try:
+                payload = self._json_payload(response)
+            except SATUSEHATClientError as exc:
+                raise SATUSEHATClientError(
+                    "Respons sukses sandbox tidak dapat dipastikan; rekonsiliasi diperlukan.",
+                    status_code=status,
+                    uncertain=verb in {"POST", "PUT"},
+                ) from exc
+
+        return ApiResponse(status, payload, response_headers)
 
     def search_patient_by_nik(self, nik: str) -> ApiResponse:
         """Search Patient through MPI using the documented NIK identifier query."""
