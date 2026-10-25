@@ -458,6 +458,125 @@ def _prepare_encounter_update(
     return payload
 
 
+def _validate_outbox_snapshot(
+    session: Session, outbox: OutboxSync, visit: Visit, patient: Patient
+) -> dict[str, Any]:
+    """Fail closed when the stored JSON, its digest, or local resource identities disagree."""
+    raw_payload = outbox.payload_json
+    stored_digest = outbox.payload_sha256
+    if not isinstance(raw_payload, str):
+        raise SATUSEHATWorkflowError("Payload outbox bukan teks JSON yang valid.")
+    calculated_digest = hashlib.sha256(raw_payload.encode("utf-8")).hexdigest()
+    if (
+        not isinstance(stored_digest, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", stored_digest)
+        or calculated_digest != stored_digest
+    ):
+        raise SATUSEHATWorkflowError(
+            "Hash payload outbox tidak cocok; transmisi diblokir untuk rekonsiliasi."
+        )
+    try:
+        payload = json.loads(raw_payload)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise SATUSEHATWorkflowError("Payload outbox bukan JSON yang valid.") from exc
+    if not isinstance(payload, dict):
+        raise SATUSEHATWorkflowError("Payload outbox harus berupa objek resource FHIR.")
+    if payload.get("resourceType") != outbox.resource_type:
+        raise SATUSEHATWorkflowError("Jenis resource payload tidak cocok dengan metadata outbox.")
+
+    # Validate local demo IDs throughout the document, not just at the top level.
+    # This prevents a well-formed, re-hashed payload from crossing patient/visit boundaries.
+    values: list[str] = []
+
+    def collect_strings(value: Any) -> None:
+        if isinstance(value, dict):
+            for nested in value.values():
+                collect_strings(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                collect_strings(nested)
+        elif isinstance(value, str):
+            values.append(value)
+
+    collect_strings(payload)
+    for value in values:
+        for match in re.finditer(r"demo-patient-([0-9]+)", value):
+            if int(match.group(1)) != patient.id:
+                raise SATUSEHATWorkflowError("Identitas Patient lokal pada payload tidak cocok dengan kunjungan.")
+        for match in re.finditer(r"demo-encounter-(?:update-)?([0-9]+)(?![0-9])", value):
+            if int(match.group(1)) != visit.id:
+                raise SATUSEHATWorkflowError("Identitas Encounter lokal pada payload tidak cocok dengan kunjungan.")
+        for match in re.finditer(r"demo-observation-([0-9]+)-", value):
+            if int(match.group(1)) != visit.id:
+                raise SATUSEHATWorkflowError("Identitas Observation lokal pada payload tidak cocok dengan kunjungan.")
+        for match in re.finditer(r"demo-clinical-impression-([0-9]+)-v[0-9]+", value):
+            if int(match.group(1)) != visit.id:
+                raise SATUSEHATWorkflowError("Identitas ClinicalImpression lokal tidak cocok dengan kunjungan.")
+        for match in re.finditer(r"demo-condition-([0-9]+)", value):
+            diagnosis = session.get(Diagnosis, int(match.group(1)))
+            if diagnosis is None or diagnosis.visit_id != visit.id:
+                raise SATUSEHATWorkflowError("Referensi Condition lokal bukan milik kunjungan ini.")
+        for match in re.finditer(r"demo-composition-([0-9]+)(?:-v[0-9]+)?", value):
+            resume = session.get(ResumeMedical, int(match.group(1)))
+            if resume is None or resume.visit_id != visit.id:
+                raise SATUSEHATWorkflowError("Identitas Composition lokal tidak cocok dengan kunjungan.")
+
+    return payload
+
+
+def _validate_phase6_source_snapshot(
+    session: Session,
+    outbox: OutboxSync,
+    visit: Visit,
+    patient: Patient,
+    resume: ResumeMedical,
+    stored_payload: dict[str, Any],
+) -> None:
+    """Block Phase 6 payloads whose source clinical rows changed after they were queued."""
+    if not outbox.idempotency_key.startswith("phase6:"):
+        return
+
+    diagnoses = session.scalars(
+        select(Diagnosis).where(
+            Diagnosis.visit_id == visit.id,
+            Diagnosis.status == "confirmed",
+            Diagnosis.code_verified.is_(True),
+        ).order_by(Diagnosis.id)
+    ).all()
+    vitals = session.scalar(select(VitalSigns).where(VitalSigns.visit_id == visit.id))
+    anamnesis = session.scalar(select(Anamnesis).where(Anamnesis.visit_id == visit.id))
+    observations = build_vital_observations(patient, visit, vitals) if vitals is not None else []
+
+    expected: dict[str, Any] | None = None
+    resource_type = outbox.resource_type
+    if resource_type == "Condition":
+        match = re.fullmatch(r"demo-condition-([0-9]+)", str(stored_payload.get("id") or ""))
+        diagnosis = session.get(Diagnosis, int(match.group(1))) if match else None
+        if diagnosis is not None and diagnosis.visit_id == visit.id:
+            expected = build_condition(patient, visit, diagnosis)
+    elif resource_type == "Observation":
+        expected = next(
+            (item for item in observations if item.get("id") == stored_payload.get("id")),
+            None,
+        )
+    elif resource_type == "ClinicalImpression" and vitals is not None:
+        expected = build_clinical_impression(patient, visit, anamnesis, resume, diagnoses, observations)
+    elif resource_type == "Encounter":
+        expected = build_encounter_update(patient, visit, diagnoses)
+    elif resource_type == "Composition":
+        expected = build_composition(patient, visit, resume, diagnoses)
+
+    if expected is None:
+        raise SATUSEHATWorkflowError(
+            "Sumber klinis untuk payload outbox tidak lagi cocok; payload lama diblokir."
+        )
+    canonical_current = json.dumps(expected, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    if canonical_current != outbox.payload_json:
+        raise SATUSEHATWorkflowError(
+            "Data sumber klinis berubah setelah outbox dibuat; transmisi payload lama diblokir."
+        )
+
+
 def prepare_sandbox_payload(session: Session, user: User, outbox_id: int, client: SATUSEHATClient) -> dict[str, Any]:
     """Prepare mapped payload for review. Never sends anything over the network."""
     require_permission(user, "satusehat:manage")
@@ -470,11 +589,13 @@ def prepare_sandbox_payload(session: Session, user: User, outbox_id: int, client
     patient = session.get(Patient, visit.patient_id)
     if patient is None or not patient.is_demo:
         raise SATUSEHATWorkflowError("Pasien bukan data demo.")
+    stored_payload = _validate_outbox_snapshot(session, outbox, visit, patient)
     if not _latest_consent(session, patient.id):
         raise SATUSEHATWorkflowError("Consent pembukaan/pemanfaatan data belum aktif.")
     resume = session.scalar(select(ResumeMedical).where(ResumeMedical.visit_id == visit.id))
     if resume is None or resume.status != "final" or not resume.finalized_at:
         raise SATUSEHATWorkflowError("Resume final belum tersedia.")
+    _validate_phase6_source_snapshot(session, outbox, visit, patient, resume, stored_payload)
     preflight = build_visit_sandbox_preflight(session, user, visit.id, client.env)
     if not preflight["ready"]:
         failed = [str(item["item"]) for item in preflight["checks"] if not item["passed"]]
