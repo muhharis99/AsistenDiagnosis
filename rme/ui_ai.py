@@ -1,0 +1,153 @@
+"""Panel Asisten Diagnosis; seluruh keluaran adalah saran, bukan diagnosis final."""
+from __future__ import annotations
+import json
+from pathlib import Path
+from typing import Any
+import streamlit as st
+from sqlalchemy import select
+from config import SYMPTOM_METADATA_PATH
+from data import disease_label, load_disease_mapping, load_symptom_mapping, symptom_label
+from rme.ai_service import AIConsentRequired, AIWorkflowError, ai_consent_granted, read_symptom_metadata, request_symptom_suggestion, review_ai_suggestion
+from rme.models import AISuggestion, AISuggestionReview, Patient, User, Visit
+from rme.schemas import AISuggestionReviewInput
+from safety import detect_red_flags, load_safety_config, red_flag_message
+
+ACTIONS = {
+ "accepted_as_working_hypothesis": "Catat sebagai kandidat hipotesis kerja",
+ "modified": "Ubah saran (catatan dokter)",
+ "ignored": "Abaikan saran",
+}
+
+def _list_json(raw: str) -> list[dict[str, Any]]:
+    try:
+        obj=json.loads(raw)
+        return obj if isinstance(obj,list) else []
+    except (TypeError,json.JSONDecodeError):
+        return []
+
+def render_ai_panel(factory, user: User, visit: Visit, patient: Patient, age: int) -> None:
+    """Panel tersedia untuk dokter berwenang; inference diperiksa kembali di service."""
+    st.subheader("Asisten Diagnosis (AI)")
+    st.warning("SARAN AI — BUKAN DIAGNOSIS. Diagnosis akhir ditetapkan dokter; pengkodean diverifikasi Perekam Medis.")
+    if not user.role or user.role.code != "dokter":
+        st.info("Panel ini hanya tersedia untuk Dokter (DPJP).")
+        return
+    if visit.dpjp_user_id is not None and visit.dpjp_user_id != user.id:
+        st.error("Kunjungan ditugaskan kepada DPJP lain.")
+        return
+    safety=load_safety_config()
+    last_flag=st.session_state.get("rme_active_red_flags")
+    if isinstance(last_flag,dict) and last_flag.get("visit_id")==visit.id:
+        st.error(red_flag_message(last_flag.get("flags",[]),safety))
+        st.error("Model tidak dijalankan. Segera ke IGD atau hubungi 112 / 119; jangan menunggu aplikasi.")
+    feedback=st.session_state.get("rme_ai_feedback")
+    if isinstance(feedback,dict) and feedback.get("visit_id")==visit.id:
+        status=feedback.get("status")
+        if status in {"special_population_blocked","insufficient_information"}:
+            st.info("**Belum cukup informasi / hasil ditahan.** "+str(feedback.get("message","Konsultasikan langsung ke tenaga kesehatan.")))
+            for q in feedback.get("followup_questions",[]): st.write("- "+str(q.get("question",q.get("label","Pertanyaan lanjutan"))))
+            return
+        if status=="red_flag_blocked": return
+        if status=="error": st.error(str(feedback.get("message","Permintaan AI gagal.")))
+
+    metadata=read_symptom_metadata()
+    features=[str(x) for x in metadata.get("feature_names",[])]
+    if not features:
+        st.error("Metadata fitur model tidak ditemukan; jalankan training gejala.")
+        return
+    if bool(metadata.get("is_demo",metadata.get("dataset",{}).get("is_demo",True))):
+        st.error("DATA DEMO SINTETIS: hasil hanya menguji alur perangkat lunak dan tidak memiliki makna klinis.")
+    else:
+        st.info("Model belum tervalidasi klinis pada populasi lokal; skor bukan diagnosis.")
+    with factory() as session:
+        consent=ai_consent_granted(session,patient.id)
+    if consent: st.success("Persetujuan AI-assist aktif.")
+    else: st.error("Persetujuan AI-assist belum aktif; inferensi dinonaktifkan sampai persetujuan tercatat.")
+    if age<18 or age>=65:
+        st.warning("Kelompok usia ini tidak divalidasi oleh prototipe. Service akan menahan inferensi.")
+    symptom_map=load_symptom_mapping()
+    flag_labels={x["id"]:x["label"] for x in safety.get("red_flags",[])}
+    with st.form(f"ai_request_{visit.id}"):
+        selected=st.multiselect("Gejala yang benar-benar diketahui",features,format_func=lambda x:symptom_label(x,symptom_map))
+        flags=st.multiselect("Tandai gejala gawat darurat",list(flag_labels),format_func=lambda x:flag_labels[x])
+        groups=st.multiselect("Kelompok khusus",["Ibu hamil","Penyakit kronis"])
+        submitted=st.form_submit_button("Susun dugaan diagnosis banding",type="primary",disabled=not consent)
+    if submitted:
+        matched=detect_red_flags(selected,flags,safety)
+        st.session_state["rme_active_red_flags"]={"visit_id":visit.id,"flags":matched} if matched else None
+        try:
+            with factory() as session:
+                result=request_symptom_suggestion(session,user,visit.id,selected,explicit_red_flags=flags,special_groups=groups)
+            st.session_state["rme_ai_feedback"]={"visit_id":visit.id,**result}
+        except (AIConsentRequired,AIWorkflowError,PermissionError,ValueError) as exc:
+            st.session_state["rme_ai_feedback"]={"visit_id":visit.id,"status":"error","message":str(exc)}
+        except Exception:
+            st.session_state["rme_ai_feedback"]={"visit_id":visit.id,"status":"error","message":"Galat internal. Tidak ada diagnosis resmi yang diubah."}
+        st.rerun()
+
+    feedback=st.session_state.get("rme_ai_feedback")
+    if isinstance(feedback,dict) and feedback.get("visit_id")==visit.id:
+        if feedback.get("status")=="generated":
+            st.success("Saran tersimpan untuk tinjauan dokter. Diagnosis resmi tidak dibuat otomatis.")
+        elif feedback.get("status") in {"red_flag_blocked","special_population_blocked","insufficient_information","error"}:
+            return
+    with factory() as session:
+        suggestion=session.scalar(select(AISuggestion).where(AISuggestion.visit_id==visit.id).order_by(AISuggestion.id.desc()).limit(1))
+        reviews=session.scalars(select(AISuggestionReview).where(AISuggestionReview.suggestion_id==suggestion.id).order_by(AISuggestionReview.id.desc()).limit(10)).all() if suggestion else []
+    if suggestion is None:
+        st.info("Belum ada saran AI pada kunjungan ini.")
+        return
+    if suggestion.status=="insufficient_information":
+        st.info("**Belum cukup informasi.** Skor top-1 di bawah ambang empiris; sistem menahan dugaan.")
+        for q in _list_json(suggestion.followup_questions_json): st.write("- "+str(q.get("question",q.get("label","Pertanyaan lanjutan"))))
+        return
+    candidates=_list_json(suggestion.output_candidates_json)
+    explanations=_list_json(suggestion.explanations_json)
+    followups=_list_json(suggestion.followup_questions_json)
+    disease_map=load_disease_mapping()
+    st.markdown("#### Tiga dugaan diagnosis banding")
+    st.caption(f"Skor top-1 {suggestion.max_probability:.1%}; ambang penahanan {suggestion.confidence_threshold:.1%}. Bukan probabilitas klinis tervalidasi.")
+    for i,c in enumerate(candidates,1):
+        st.markdown(f"**{i}. {disease_label(str(c.get('label','')),disease_map)} — {float(c.get('probability',0)):.1%}**")
+    st.markdown("#### Faktor dan pertanyaan lanjutan")
+    for i,e in enumerate(explanations,1):
+        with st.expander(str(e.get("disease",f"Kandidat {i}"))):
+            present=e.get("supporting_symptoms",[])
+            absent=e.get("commonly_seen_but_not_selected",[])
+            st.write("Gejala pilihan yang sering muncul pada sampel kelas:",", ".join(str(x.get("label",x.get("id"))) for x in present) or "Tidak ada fitur menonjol.")
+            st.write("Gejala lazim di sampel kelas namun belum dipilih:",", ".join(str(x.get("label",x.get("id"))) for x in absent) or "Tidak ada fitur tambahan yang memenuhi kriteria.")
+            st.caption(str(e.get("note","Prevalensi data bukan kriteria diagnosis.")))
+    for q in followups:
+        st.write(f"- {q.get('question',q.get('label','Pertanyaan lanjutan'))} (information gain={float(q.get('information_gain',0)):.3f})")
+    st.info("Kode ICD-10 belum dipilih pada Fase 2. Label penyakit belum merupakan diagnosis terverifikasi.")
+    st.markdown("#### Tinjauan dokter — tidak mengubah diagnosis resmi")
+    if not candidates:
+        return
+    labels=[str(x.get("label","")) for x in candidates]
+    with st.form(f"ai_review_{suggestion.id}"):
+        action=st.selectbox("Aksi",list(ACTIONS),format_func=lambda x:ACTIONS[x])
+        selected_candidate=st.selectbox("Kandidat",labels,format_func=lambda x:disease_label(x,disease_map))
+        modified=st.text_input("Saran versi dokter (khusus aksi Ubah)")
+        reason=st.text_area("Alasan (wajib untuk Ubah/Abaikan)")
+        save=st.form_submit_button("Catat tinjauan")
+    if save:
+        payload={"action":action,"selected_candidate":selected_candidate if action=="accepted_as_working_hypothesis" else None,
+                 "modified_candidate":modified if action=="modified" else None,
+                 "reason":reason if action in {"modified","ignored"} else None}
+        try:
+            with factory() as session:
+                review_ai_suggestion(session,user,suggestion.id,AISuggestionReviewInput(**payload))
+            st.success("Tinjauan tercatat dalam audit; tidak ada diagnosis resmi yang dibuat.")
+            st.rerun()
+        except Exception as exc:
+            st.error(str(exc))
+    if reviews:
+        st.markdown("#### Riwayat tinjauan")
+        for item in reviews:
+            st.write(f"- {item.action} · {item.created_at} · {item.selected_candidate or item.modified_candidate or '—'}")
+            if item.reason: st.caption("Alasan: "+item.reason)
+    with st.expander("Metadata dan jejak model"):
+        st.write("Versi model:",suggestion.model_version)
+        st.write("Versi kode:",suggestion.code_version)
+        st.code(f"Model SHA-256: {suggestion.model_artifact_sha256}\nData latih SHA-256: {suggestion.training_data_sha256}")
+        st.write("Dibuat UTC:",suggestion.created_at.isoformat())
