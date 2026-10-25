@@ -8,7 +8,7 @@ from sqlalchemy import select
 from config import SYMPTOM_METADATA_PATH
 from data import disease_label, load_disease_mapping, load_symptom_mapping, symptom_label
 from rme.ai_service import AIConsentRequired, AIWorkflowError, ai_consent_granted, read_symptom_metadata, request_symptom_suggestion, review_ai_suggestion
-from rme.models import AISuggestion, AISuggestionReview, Patient, User, Visit
+from rme.models import AISuggestion, AISuggestionReview, AuditLog, Patient, User, Visit
 from rme.schemas import AISuggestionReviewInput
 from safety import detect_red_flags, load_safety_config, red_flag_message
 
@@ -36,6 +36,27 @@ def render_ai_panel(factory, user: User, visit: Visit, patient: Patient, age: in
         st.error("Kunjungan ditugaskan kepada DPJP lain.")
         return
     safety=load_safety_config()
+    # Baca alert keselamatan dari audit agar tetap tampak setelah session/browser refresh.
+    with factory() as session:
+        flag_logs=session.scalars(
+            select(AuditLog).where(
+                AuditLog.action=="ai.red_flag_blocked",
+                AuditLog.entity_type=="Visit",
+                AuditLog.entity_id==str(visit.id),
+            ).order_by(AuditLog.id.asc())
+        ).all()
+    persisted_ids=set()
+    for log in flag_logs:
+        try:
+            persisted_ids.update(str(x) for x in json.loads(log.details_json).get("red_flag_ids",[]))
+        except (json.JSONDecodeError,TypeError):
+            continue
+    catalog={str(item["id"]):item for item in safety.get("red_flags",[])}
+    persisted_flags=[catalog[key] for key in sorted(persisted_ids) if key in catalog]
+    if persisted_flags:
+        st.error(red_flag_message(persisted_flags,safety))
+        st.error("Peringatan gawat darurat telah tercatat untuk kunjungan ini. Inferensi AI tetap diblokir; tindak lanjuti keadaan klinis di luar aplikasi.")
+        return
     last_flag=st.session_state.get("rme_active_red_flags")
     if isinstance(last_flag,dict) and last_flag.get("visit_id")==visit.id:
         st.error(red_flag_message(last_flag.get("flags",[]),safety))
@@ -98,6 +119,8 @@ def render_ai_panel(factory, user: User, visit: Visit, patient: Patient, age: in
             with factory() as session:
                 result=request_symptom_suggestion(session,user,visit.id,selected,explicit_red_flags=flags,special_groups=groups)
             st.session_state["rme_ai_feedback"]={"visit_id":visit.id,**result}
+            if result.get("status")=="red_flag_blocked":
+                st.session_state["rme_active_red_flags"]={"visit_id":visit.id,"flags":result.get("red_flags",matched)}
         except (AIConsentRequired,AIWorkflowError,PermissionError,ValueError) as exc:
             st.session_state["rme_ai_feedback"]={"visit_id":visit.id,"status":"error","message":str(exc)}
         except Exception:
