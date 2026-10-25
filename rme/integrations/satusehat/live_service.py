@@ -801,7 +801,14 @@ def reconcile_uncertain_transmission(
             response = api.get_resource("Encounter", external_id)
             response_status = response.status_code
             resource = response.payload
-            if resource.get("resourceType") == "Encounter" and resource.get("id") == external_id:
+            expected_subject = (payload.get("subject") or {}).get("reference")
+            actual_subject = (resource.get("subject") or {}).get("reference")
+            if (
+                resource.get("resourceType") == "Encounter"
+                and resource.get("id") == external_id
+                and isinstance(expected_subject, str)
+                and actual_subject == expected_subject
+            ):
                 candidates = [resource]
             reported_total = len(candidates)
             lookup_method = "read_mapped_encounter"
@@ -844,7 +851,17 @@ def reconcile_uncertain_transmission(
                     and item.get("value") == identifier["value"]
                     for item in server_identifiers
                 )
-                if has_same_identifier:
+                expected_subject = (payload.get("subject") or {}).get("reference")
+                expected_encounter = (payload.get("encounter") or {}).get("reference")
+                actual_subject = (resource.get("subject") or {}).get("reference")
+                actual_encounter = (resource.get("encounter") or {}).get("reference")
+                same_visit = (
+                    isinstance(expected_subject, str)
+                    and actual_subject == expected_subject
+                    and isinstance(expected_encounter, str)
+                    and actual_encounter == expected_encounter
+                )
+                if has_same_identifier and same_visit:
                     candidates.append(resource)
     except SATUSEHATClientError as exc:
         # A missing/failed read is not proof that the original write failed.
