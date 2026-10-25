@@ -207,3 +207,10 @@ Fase 6 menambah builder dan outbox untuk resource Observation (tanda vital), Cli
 Urutan pengiriman disarankan: Condition → Observation → ClinicalImpression → Encounter update → Composition. Update Encounter memakai PUT ke ID sandbox yang sudah dipetakan; fase ini belum membuat Encounter baru. Klien tetap dibatasi staging, TLS, operator confirmation, dan network opt-in.
 
 Tes menggunakan fake transport, bukan koneksi nyata. Validator bukan validator lengkap profil SATUSEHAT, dan dataset tetap fiktif. Dokumentasi: docs/FASE_6_RME_FHIR_RESOURCES.md
+
+
+## Fase 7F — Integritas audit transmisi
+
+Fase 7F menambah tes regresi untuk verifikasi hash-chain audit: rantai kosong/utuh, perubahan detail event, perubahan hash, dan pemutusan tautan predecessor. Panduan operator ada di [docs/FASE_7F_INTEGRITAS_AUDIT.md](docs/FASE_7F_INTEGRITAS_AUDIT.md).
+
+Pemeriksaan ini menggunakan helper audit yang sudah ada, tidak mengubah skema database, tidak mengubah status transmisi, dan tidak mengirim ulang resource. Hash-chain lokal membantu mendeteksi inkonsistensi, tetapi bukan pengganti penyimpanan audit eksternal append-only. Semua tes memakai data demo sintetis; hasil CI bukan bukti penerimaan resource oleh SATUSEHAT atau kesiapan produksi.
