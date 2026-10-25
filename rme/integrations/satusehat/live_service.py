@@ -124,7 +124,7 @@ def _condition_external_reference(
 ) -> str:
     match = re.fullmatch(r"Condition/demo-condition-([0-9]+)", reference or "")
     if not match:
-        raise SATUSEHATWorkflowError("Referensi Condition dalam Composition tidak dikenali.")
+        raise SATUSEHATWorkflowError("Referensi Condition tidak dikenali.")
     diagnosis_id = int(match.group(1))
     rows = session.scalars(
         select(OutboxSync).where(
@@ -132,25 +132,19 @@ def _condition_external_reference(
             OutboxSync.is_demo.is_(True),
         ).order_by(OutboxSync.id.desc())
     ).all()
-    target = None
     for item in rows:
         try:
             payload = json.loads(item.payload_json)
         except json.JSONDecodeError:
             continue
-        if payload.get("id") == f"demo-condition-{diagnosis_id}":
-            target = item
-            break
-    if target is None:
-        raise SATUSEHATWorkflowError("Outbox Condition yang dirujuk Composition tidak ditemukan.")
-    sent = session.scalar(
-        select(SATUSEHATTransmission).where(SATUSEHATTransmission.outbox_id == target.id)
+        if payload.get("id") != f"demo-condition-{diagnosis_id}":
+            continue
+        sent = session.scalar(select(SATUSEHATTransmission).where(SATUSEHATTransmission.outbox_id == item.id))
+        if sent is not None and sent.status == "succeeded" and sent.external_resource_id:
+            return f"Condition/{sent.external_resource_id}"
+    raise SATUSEHATWorkflowError(
+        "Condition yang dirujuk belum memiliki respons sukses; kirim Condition terverifikasi terlebih dahulu."
     )
-    if sent is None or sent.status != "succeeded" or not sent.external_resource_id:
-        raise SATUSEHATWorkflowError(
-            "Composition belum boleh dikirim: kirim Condition terverifikasi yang dirujuk lebih dahulu."
-        )
-    return f"Condition/{sent.external_resource_id}"
 
 
 def _prepare_condition(
@@ -646,8 +640,26 @@ def queue_visit_phase6_resources(session: Session, user: User, visit_id: int) ->
     condition_payloads = [build_condition(patient, visit, diagnosis) for diagnosis in diagnoses]
     composition_payload = build_composition(patient, visit, resume, diagnoses)
     staged: list[tuple[str, dict[str, Any], str]] = []
-    staged.extend(("Condition", payload, f"phase6:Condition:visit-{visit.id}:diagnosis-{diagnosis.id}")
-                  for diagnosis, payload in zip(diagnoses, condition_payloads))
+    for diagnosis, payload in zip(diagnoses, condition_payloads):
+        prior_sent = False
+        prior_rows = session.scalars(select(OutboxSync).where(
+            OutboxSync.visit_id == visit.id, OutboxSync.resource_type == "Condition",
+            OutboxSync.is_demo.is_(True),
+        ).order_by(OutboxSync.id.desc())).all()
+        for prior in prior_rows:
+            try:
+                prior_payload = json.loads(prior.payload_json)
+            except json.JSONDecodeError:
+                continue
+            if prior_payload.get("id") != f"demo-condition-{diagnosis.id}":
+                continue
+            prior_tx = session.scalar(select(SATUSEHATTransmission).where(SATUSEHATTransmission.outbox_id == prior.id))
+            if prior_tx is not None and prior_tx.status == "succeeded" and prior_tx.external_resource_id:
+                prior_sent = True
+                break
+        if not prior_sent:
+            staged.append(("Condition", payload,
+                           f"phase6:Condition:visit-{visit.id}:diagnosis-{diagnosis.id}"))
     staged.extend(("Observation", payload, f"phase6:Observation:visit-{visit.id}:{payload['id']}")
                   for payload in observations)
     staged.append(("ClinicalImpression", impression_payload,
