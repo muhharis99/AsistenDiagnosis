@@ -96,7 +96,7 @@ def test_uncertain_post_reconciles_only_after_one_exact_server_match(context):
 
 def test_zero_search_results_keep_uncertain_and_do_not_retry_write(context):
     transport = ReconciliationTransport(bundle_total=0)
-    factory, users, outbox_id, client, _ = _uncertain_condition(context, transport)
+    factory, users, outbox_id, client, _, _ = _uncertain_condition(context, transport)
 
     with factory() as session:
         result = reconcile_uncertain_transmission(
