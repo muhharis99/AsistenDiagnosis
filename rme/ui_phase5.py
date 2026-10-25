@@ -14,7 +14,7 @@ from rme.integrations.satusehat.live_service import (
     search_demo_patient_mpi,
     transmit_outbox_item_sandbox,
 )
-from rme.models import Consent, OutboxSync, Patient, SATUSEHATTransmission
+from rme.models import OutboxSync, Patient, SATUSEHATTransmission
 from rme.security import require_permission
 
 
@@ -85,16 +85,18 @@ def render_phase5_sandbox_tools(factory, user, cipher) -> None:
                     OutboxSync.resource_type.in_(["Condition", "Composition"]),
                 ).order_by(OutboxSync.created_at, OutboxSync.id).limit(100)
             ).all()
+            transmissions = session.scalars(select(SATUSEHATTransmission).where(SATUSEHATTransmission.is_demo.is_(True))).all()
+            terminal_ids = {row.outbox_id for row in transmissions if row.status in {"succeeded", "sending", "uncertain", "blocked"}}
             queued_options = {
                 f"#{row.id} · {row.resource_type} · kunjungan #{row.visit_id}": row.id
-                for row in queued
+                for row in queued if row.id not in terminal_ids
             }
         if not queued_options:
             st.info("Tidak ada outbox demo berstatus queued untuk dikirim.")
         else:
             with st.form("phase5_submit_resource"):
                 selected = st.selectbox("Resource (satu kali pengiriman)", list(queued_options))
-                confirm_send = st.checkbox("Saya memastikan payload berisi data uji sintentis saja dan menyetujui pengiriman satu resource ke SATUSEHAT STAGING.")
+                confirm_send = st.checkbox("Saya memastikan payload berisi data uji sintetis saja dan menyetujui pengiriman satu resource ke SATUSEHAT STAGING.")
                 submit_send = st.form_submit_button("Kirim satu resource", disabled=not enabled)
             if submit_send:
                 try:
