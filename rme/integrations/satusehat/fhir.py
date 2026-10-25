@@ -74,7 +74,7 @@ def build_composition(patient, visit, resume, diagnoses) -> dict[str, Any]:
     if verified:
         sections.append({
             "title": "Diagnosis terverifikasi",
-            "entry": [{"reference": {"reference": f"Condition/demo-condition-{d.id}"}} for d in verified],
+            "entry": [{"reference": f"Condition/demo-condition-{d.id}"} for d in verified],
             "text": _narrative("Diagnosis terverifikasi", "; ".join(f"{d.icd10_code} — {d.icd10_display}" for d in verified)),
         })
     return {

@@ -93,7 +93,7 @@ def test_only_manual_doctor_diagnosis_and_known_code_are_accepted(context):
     factory, _, users = context
     visit_id, _ = prepare_visit(context)
     with factory() as session:
-        with pytest.raises(DiagnosisWorkflowError):
+        with pytest.raises(PermissionError):
             create_doctor_diagnosis(session, users["perawat_demo"], visit_id,
                                     clinical_label="Diagnosis salah peran", icd10_code="A41.9", confirmed=True)
         with pytest.raises(DiagnosisWorkflowError):
