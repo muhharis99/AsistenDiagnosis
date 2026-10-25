@@ -103,6 +103,13 @@ def test_red_flag_blocks_before_consent_or_model(context,tmp_path):
             explicit_red_flags=["chest_pain"],model_path=tmp_path/"missing.joblib",metadata_path=tmp_path/"missing.json"
         )
     assert result["status"]=="red_flag_blocked"
+    # Alert tersimpan pada kunjungan; permintaan berikutnya tanpa red flag eksplisit tetap terblokir.
+    with factory() as session:
+        later=request_symptom_suggestion(
+            session,users["dokter_demo"],visit_id,["itching","cough","fatigue"],
+            model_path=tmp_path/"missing.joblib",metadata_path=tmp_path/"missing.json"
+        )
+    assert later["status"]=="red_flag_blocked"
     with factory() as session:
         assert session.scalar(select(AISuggestion.id).where(AISuggestion.visit_id==visit_id)) is None
         assert session.scalar(select(AuditLog.id).where(AuditLog.action=="ai.red_flag_blocked")) is not None
