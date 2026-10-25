@@ -157,6 +157,27 @@ def test_elderly_group_is_blocked_before_model(context,tmp_path):
     assert "Lansia" in result["groups"]
 
 
+def test_special_population_block_persists_for_visit(context,tmp_path):
+    factory,_,users=context
+    patient=make_patient(context,ai_consent=True)
+    visit_id=make_active_visit(context,patient.id)
+    with factory() as session:
+        first=request_symptom_suggestion(
+            session,users["dokter_demo"],visit_id,["itching","cough","fatigue"],
+            special_groups=["Ibu hamil"],
+            model_path=tmp_path/"missing.joblib",metadata_path=tmp_path/"missing.json"
+        )
+    assert first["status"]=="special_population_blocked"
+    # Kotak kelompok khusus tidak dipilih lagi, tetapi audit kunjungan tetap memblokir model.
+    with factory() as session:
+        second=request_symptom_suggestion(
+            session,users["dokter_demo"],visit_id,["itching","cough","fatigue"],
+            model_path=tmp_path/"missing.joblib",metadata_path=tmp_path/"missing.json"
+        )
+    assert second["status"]=="special_population_blocked"
+    assert "Ibu hamil" in second["groups"]
+
+
 def test_suggestion_is_saved_and_review_does_not_create_formal_diagnosis(context,tmp_path):
     factory,_,users=context
     patient=make_patient(context,ai_consent=True)
