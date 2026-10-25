@@ -40,14 +40,33 @@ def render_ai_panel(factory, user: User, visit: Visit, patient: Patient, age: in
     if isinstance(last_flag,dict) and last_flag.get("visit_id")==visit.id:
         st.error(red_flag_message(last_flag.get("flags",[]),safety))
         st.error("Model tidak dijalankan. Segera ke IGD atau hubungi 112 / 119; jangan menunggu aplikasi.")
+    # Pemeriksaan red flag selalu dapat dipakai, termasuk ketika consent AI belum aktif.
+    with st.form(f"rme_emergency_check_{visit.id}"):
+        emergency_ids=st.multiselect(
+            "Pemeriksaan keselamatan: pilih tanda gawat darurat yang diketahui",
+            options=[x["id"] for x in safety.get("red_flags",[])],
+            format_func=lambda x: next((item["label"] for item in safety.get("red_flags",[]) if item["id"]==x),x),
+        )
+        check_emergency=st.form_submit_button("Periksa red flag (tidak menjalankan model)")
+    if check_emergency:
+        matched=detect_red_flags([],emergency_ids,safety)
+        st.session_state["rme_active_red_flags"]={"visit_id":visit.id,"flags":matched} if matched else None
+        if matched:
+            try:
+                # Service memblokir red flag sebelum memeriksa consent atau memuat model.
+                with factory() as session:
+                    result=request_symptom_suggestion(session,user,visit.id,[],explicit_red_flags=emergency_ids)
+                st.session_state["rme_ai_feedback"]={"visit_id":visit.id,**result}
+            except Exception:
+                st.session_state["rme_ai_feedback"]={"visit_id":visit.id,"status":"red_flag_blocked","message":"Red flag terdeteksi; model tidak dijalankan."}
+        st.rerun()
+
     feedback=st.session_state.get("rme_ai_feedback")
     if isinstance(feedback,dict) and feedback.get("visit_id")==visit.id:
         status=feedback.get("status")
         if status in {"special_population_blocked","insufficient_information"}:
             st.info("**Belum cukup informasi / hasil ditahan.** "+str(feedback.get("message","Konsultasikan langsung ke tenaga kesehatan.")))
             for q in feedback.get("followup_questions",[]): st.write("- "+str(q.get("question",q.get("label","Pertanyaan lanjutan"))))
-            return
-        if status=="red_flag_blocked": return
         if status=="error": st.error(str(feedback.get("message","Permintaan AI gagal.")))
 
     metadata=read_symptom_metadata()
