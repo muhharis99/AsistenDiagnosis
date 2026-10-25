@@ -90,7 +90,6 @@ def test_resource_type_must_match_outbox_metadata(context):
 def test_rehashed_payload_cannot_reference_another_patient(context):
     factory, users, visit_id, ids = queue_resources(context)
     with factory() as session:
-        visit = session.get(__import__("rme.models", fromlist=["Visit"]).Visit, visit_id)
         row = session.get(OutboxSync, ids["Observation"])
         payload = json.loads(row.payload_json)
         payload["subject"]["reference"] = "Patient/demo-patient-999999"
