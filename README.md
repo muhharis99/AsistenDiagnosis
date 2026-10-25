@@ -187,3 +187,14 @@ Fase 4 menambahkan mapping ID sandbox yang diverifikasi secara terpisah untuk Pa
 Fase ini tidak melakukan OAuth, GET MPI/MNI, POST resource, maupun transmisi jaringan. Bahkan ketika preflight lengkap, pengiriman belum tersedia. Semua payload Fase 3 tetap payload mock, bukan payload untuk sandbox.
 
 Dokumentasi rinci: docs/FASE_4_SATUSEHAT_READINESS.md
+
+
+## 9. Fase 5 — OAuth sandbox, MPI search, dan transmisi resource
+
+Fase 5 menambah klien OAuth2 client_credentials dan API FHIR SATUSEHAT staging, pencarian MPI berdasarkan NIK dari pasien demo yang memiliki consent aktif, transformasi payload mock menjadi payload create-ready berbasis mapping terverifikasi, serta transmisi satu resource Condition/Composition dengan konfirmasi operator. Jaringan tetap nonaktif secara default (SATUSEHAT_ENABLE_NETWORK=false) dan tidak ada URL produksi diizinkan.
+
+Ledger transmisi tidak menyimpan token, secret, NIK, payload klinis mentah, atau body OperationOutcome. Jika POST timeout atau penerimaannya tidak dapat dipastikan, status menjadi uncertain dan pengulangan otomatis diblokir untuk menghindari duplikasi.
+
+Pengujian fase ini memakai fake transport; ia memverifikasi alur kode dan keamanan, bukan keberhasilan koneksi credential SATUSEHAT. Data aplikasi harus tetap sintetis dan mode tetap APP_MODE=demo.
+
+Dokumentasi: docs/FASE_5_SATUSEHAT_SANDBOX_CLIENT.md
