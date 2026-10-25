@@ -282,6 +282,46 @@ def _prepare_composition(
             raise SATUSEHATWorkflowError("Section Diagnosis tidak ditemukan untuk mereferensikan Condition.")
         diagnosis_section["entry"] = list(diagnosis_section.get("entry") or []) + diagnosis_entries
     payload["section"] = mapped_sections
+
+    # Attach the actual submitted Observations to the physical-examination section.
+    observation_rows = session.scalars(
+        select(OutboxSync).where(
+            OutboxSync.visit_id == visit.id,
+            OutboxSync.resource_type == "Observation",
+            OutboxSync.idempotency_key.like(f"phase6:Observation:visit-{visit.id}:%"),
+        ).order_by(OutboxSync.id)
+    ).all()
+    if observation_rows:
+        physical_section = next((item for item in mapped_sections if item["title"] == "Pemeriksaan Fisik"), None)
+        if physical_section is None:
+            raise SATUSEHATWorkflowError("Section Pemeriksaan Fisik tidak tersedia untuk memuat Observation.")
+        entries = list(physical_section.get("entry") or [])
+        for item in observation_rows:
+            sent = session.scalar(select(SATUSEHATTransmission).where(SATUSEHATTransmission.outbox_id == item.id))
+            if sent is None or sent.status != "succeeded" or not sent.external_resource_id:
+                raise SATUSEHATWorkflowError("Kirim seluruh Observation terlebih dahulu sebelum Composition.")
+            entries.append({"reference": f"Observation/{sent.external_resource_id}"})
+        physical_section["entry"] = entries
+
+    impression_rows = session.scalars(
+        select(OutboxSync).where(
+            OutboxSync.visit_id == visit.id,
+            OutboxSync.resource_type == "ClinicalImpression",
+            OutboxSync.idempotency_key.like(f"phase6:ClinicalImpression:visit-{visit.id}:%"),
+        ).order_by(OutboxSync.id)
+    ).all()
+    if impression_rows:
+        anamnesis_section = next((item for item in mapped_sections if item["title"] == "Anamnesis"), None)
+        if anamnesis_section is None:
+            raise SATUSEHATWorkflowError("Section Anamnesis tidak tersedia untuk memuat ClinicalImpression.")
+        entries = list(anamnesis_section.get("entry") or [])
+        for item in impression_rows:
+            sent = session.scalar(select(SATUSEHATTransmission).where(SATUSEHATTransmission.outbox_id == item.id))
+            if sent is None or sent.status != "succeeded" or not sent.external_resource_id:
+                raise SATUSEHATWorkflowError("Kirim ClinicalImpression terlebih dahulu sebelum Composition.")
+            entries.append({"reference": f"ClinicalImpression/{sent.external_resource_id}"})
+        anamnesis_section["entry"] = entries
+
     # Location is checked/mapped before allowing submission, even when this minimal Composition
     # profile does not include a Location element directly.
     _ = location_id
@@ -445,10 +485,16 @@ def prepare_sandbox_payload(session: Session, user: User, outbox_id: int, client
         raise SATUSEHATWorkflowError("Preflight belum lengkap: " + ", ".join(failed[:8]))
     if outbox.resource_type == "Condition":
         payload = _prepare_condition(session, outbox, visit, patient, client.organization_ihs_id)
+    elif outbox.resource_type == "Observation":
+        payload = _prepare_observation(session, outbox, visit, patient, client.organization_ihs_id)
+    elif outbox.resource_type == "ClinicalImpression":
+        payload = _prepare_clinical_impression(session, outbox, visit, patient, resume, client.organization_ihs_id)
+    elif outbox.resource_type == "Encounter":
+        payload = _prepare_encounter_update(session, outbox, visit, patient, client.organization_ihs_id)
     elif outbox.resource_type == "Composition":
         payload = _prepare_composition(session, outbox, visit, patient, resume, client.organization_ihs_id)
     else:
-        raise SATUSEHATWorkflowError("Jenis resource outbox tidak didukung oleh pengiriman sandbox Fase 5.")
+        raise SATUSEHATWorkflowError("Jenis resource outbox belum didukung.")
     validate_sandbox_resource(payload)
     return payload
 
@@ -504,12 +550,19 @@ def transmit_outbox_item_sandbox(
     session.refresh(transmission)
 
     try:
-        response = api.post_resource(outbox.resource_type, payload)
-        external_id = response.payload.get("id")
-        if not isinstance(external_id, str) or not is_safe_external_id(external_id):
-            location = str(response.headers.get("Location") or response.headers.get("location") or "")
-            match = re.search(r"/(Condition|Composition)/([A-Za-z0-9.-]{1,128})(?:/_history/[0-9]+)?$", location)
-            external_id = match.group(2) if match else None
+        if outbox.resource_type == "Encounter":
+            response = api.update_resource("Encounter", str(payload.get("id") or ""), payload)
+            external_id = str(payload.get("id") or "")
+        else:
+            response = api.post_resource(outbox.resource_type, payload)
+            external_id = response.payload.get("id")
+            if not isinstance(external_id, str) or not is_safe_external_id(external_id):
+                location = str(response.headers.get("Location") or response.headers.get("location") or "")
+                match = re.search(
+                    r"/(Condition|Composition|Observation|ClinicalImpression|Encounter)/([A-Za-z0-9.-]{1,128})(?:/_history/[0-9]+)?$",
+                    location,
+                )
+                external_id = match.group(2) if match else None
         if not external_id or not is_safe_external_id(external_id):
             raise SATUSEHATClientError(
                 "POST mendapat respons sukses tetapi ID resource tidak dapat dipastikan.",
@@ -560,3 +613,76 @@ def list_transmissions(session: Session, user) -> list[SATUSEHATTransmission]:
                  {"count": len(rows)})
     session.commit()
     return rows
+
+
+def queue_visit_phase6_resources(session: Session, user: User, visit_id: int) -> list[OutboxSync]:
+    """Queue FHIR resources for a finished demo visit; no network calls occur here."""
+    require_permission(user, "satusehat:manage")
+    visit = session.get(Visit, visit_id)
+    if visit is None or not visit.is_demo or visit.status != "finished":
+        raise SATUSEHATWorkflowError("Fase 6 hanya dapat menyiapkan kunjungan demo berstatus finished.")
+    patient = session.get(Patient, visit.patient_id)
+    if patient is None or not patient.is_demo or not _latest_consent(session, patient.id):
+        raise SATUSEHATWorkflowError("Pasien demo dan consent pembukaan/pemanfaatan data aktif diperlukan.")
+    resume = session.scalar(select(ResumeMedical).where(ResumeMedical.visit_id == visit.id))
+    if resume is None or resume.status != "final" or not resume.finalized_at:
+        raise SATUSEHATWorkflowError("Resume final belum tersedia.")
+    diagnoses = session.scalars(select(Diagnosis).where(
+        Diagnosis.visit_id == visit.id,
+        Diagnosis.status == "confirmed",
+        Diagnosis.code_verified.is_(True),
+    ).order_by(Diagnosis.id)).all()
+    if not diagnoses:
+        raise SATUSEHATWorkflowError("Minimal satu diagnosis confirmed dan kode ICD-10 terverifikasi diperlukan.")
+    vitals = session.scalar(select(VitalSigns).where(VitalSigns.visit_id == visit.id))
+    if vitals is None:
+        raise SATUSEHATWorkflowError("Tanda vital harus tersedia sebelum menyiapkan Observation.")
+    observations = build_vital_observations(patient, visit, vitals)
+    if not observations:
+        raise SATUSEHATWorkflowError("Tidak ada nilai tanda vital yang dapat dipetakan ke Observation.")
+    anamnesis = session.scalar(select(Anamnesis).where(Anamnesis.visit_id == visit.id))
+    encounter_payload = build_encounter_update(patient, visit, diagnoses)
+    impression_payload = build_clinical_impression(patient, visit, anamnesis, resume, diagnoses, observations)
+    condition_payloads = [build_condition(patient, visit, diagnosis) for diagnosis in diagnoses]
+    composition_payload = build_composition(patient, visit, resume, diagnoses)
+    staged: list[tuple[str, dict[str, Any], str]] = []
+    staged.extend(("Condition", payload, f"phase6:Condition:visit-{visit.id}:diagnosis-{diagnosis.id}")
+                  for diagnosis, payload in zip(diagnoses, condition_payloads))
+    staged.extend(("Observation", payload, f"phase6:Observation:visit-{visit.id}:{payload['id']}")
+                  for payload in observations)
+    staged.append(("ClinicalImpression", impression_payload,
+                   f"phase6:ClinicalImpression:visit-{visit.id}:resume-{resume.id}-v{resume.version}"))
+    staged.append(("Encounter", encounter_payload, f"phase6:Encounter:update-visit-{visit.id}:v1"))
+    staged.append(("Composition", composition_payload,
+                   f"phase6:Composition:visit-{visit.id}:resume-{resume.id}-v{resume.version}"))
+
+    queued: list[OutboxSync] = []
+    for resource_type, payload, key in staged:
+        existing = session.scalar(select(OutboxSync).where(OutboxSync.idempotency_key == key))
+        if existing is not None:
+            queued.append(existing)
+            continue
+        canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        row = OutboxSync(
+            visit_id=visit.id,
+            resource_type=resource_type,
+            payload_json=canonical,
+            payload_sha256=hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+            idempotency_key=key,
+            status="queued",
+            attempt_count=0,
+            created_by=user.id,
+            is_demo=True,
+        )
+        session.add(row)
+        session.flush()
+        queued.append(row)
+    append_audit(
+        session, user, "satusehat.phase6_outbox_queued", "Visit", visit.id,
+        {"resource_types": [kind for kind, _, _ in staged], "outbox_count": len(queued),
+         "mode": "mock_queue_only", "network_request": False},
+    )
+    session.commit()
+    for item in queued:
+        session.refresh(item)
+    return queued
