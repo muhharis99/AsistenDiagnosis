@@ -198,3 +198,12 @@ Ledger transmisi tidak menyimpan token, secret, NIK, payload klinis mentah, atau
 Pengujian fase ini memakai fake transport; ia memverifikasi alur kode dan keamanan, bukan keberhasilan koneksi credential SATUSEHAT. Data aplikasi harus tetap sintetis dan mode tetap APP_MODE=demo.
 
 Dokumentasi: docs/FASE_5_SATUSEHAT_SANDBOX_CLIENT.md
+
+
+## 10. Fase 6 — Resource lanjutan FHIR R4 rawat jalan
+
+Fase 6 menambah builder dan outbox untuk resource Observation (tanda vital), ClinicalImpression (riwayat perjalanan penyakit dari dokumentasi dokter), dan update Encounter yang sudah memiliki mapping verified. FHIR Composition menautkan Observation pada section Pemeriksaan Fisik dan ClinicalImpression pada section Anamnesis. Validasi lokal menolak placeholder demo dan mengharuskan referensi remote terverifikasi.
+
+Urutan pengiriman disarankan: Condition → Observation → ClinicalImpression → Encounter update → Composition. Update Encounter memakai PUT ke ID sandbox yang sudah dipetakan; fase ini belum membuat Encounter baru. Klien tetap dibatasi staging, TLS, operator confirmation, dan network opt-in.
+
+Tes menggunakan fake transport, bukan koneksi nyata. Validator bukan validator lengkap profil SATUSEHAT, dan dataset tetap fiktif. Dokumentasi: docs/FASE_6_RME_FHIR_RESOURCES.md
