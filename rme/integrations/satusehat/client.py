@@ -204,7 +204,7 @@ class SATUSEHATClient:
                 headers={
                     "Authorization": f"Bearer {token}",
                     "Accept": "application/fhir+json, application/json",
-                    **({"Content-Type": "application/json"} if verb == "POST" else {}),
+                    **({"Content-Type": "application/json"} if verb in {"POST", "PUT"} else {}),
                 },
                 timeout=(3.05, 20),
                 verify=True,
