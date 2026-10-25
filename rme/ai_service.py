@@ -54,6 +54,50 @@ def read_symptom_metadata(path: Path | None = None) -> dict[str, Any]:
         return {}
 
 
+def record_red_flag_alert(
+    session: Session,
+    user: User,
+    visit_id: int,
+    selected_symptoms: Iterable[str] | None = None,
+    explicit_red_flags: Iterable[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Catat gejala gawat darurat tanpa inferensi dan tanpa mensyaratkan consent AI."""
+    require_permission(user, "visit:read")
+    visit = session.get(Visit, visit_id)
+    if visit is None or not visit.is_demo:
+        raise AIWorkflowError("Kunjungan demo tidak ditemukan.")
+    safety_config = load_safety_config()
+    current = detect_red_flags(selected_symptoms, explicit_red_flags, safety_config)
+    previous = session.scalars(
+        select(AuditLog).where(
+            AuditLog.action == "ai.red_flag_blocked",
+            AuditLog.entity_type == "Visit",
+            AuditLog.entity_id == str(visit.id),
+        ).order_by(AuditLog.id.asc())
+    ).all()
+    prior_ids: set[str] = set()
+    for event in previous:
+        try:
+            prior_ids.update(str(value) for value in json.loads(event.details_json).get("red_flag_ids", []))
+        except (json.JSONDecodeError, TypeError):
+            continue
+    all_ids = prior_ids | {str(item.get("id")) for item in current}
+    catalog = {str(item.get("id")): item for item in safety_config.get("red_flags", [])}
+    flags = [
+        {**catalog[key], "review_status": safety_config.get("review_status", "PERLU DITINJAU TENAGA MEDIS")}
+        for key in sorted(all_ids) if key in catalog
+    ]
+    if flags:
+        append_audit(
+            session, user, "ai.red_flag_blocked", "Visit", visit.id,
+            {"red_flag_ids": [item.get("id") for item in flags],
+             "symptom_count": len(list(selected_symptoms or [])), "model_called": False,
+             "source": "manual_safety_check"},
+        )
+        session.commit()
+    return flags
+
+
 def _hash_training_data(bundle: dict[str, Any]) -> str:
     """Hash kanonis untuk fitur dan label train yang ikut disimpan dalam bundle model."""
     if "X_train" not in bundle or "y_train" not in bundle:
