@@ -57,6 +57,25 @@ def render_ai_panel(factory, user: User, visit: Visit, patient: Patient, age: in
         st.error(red_flag_message(persisted_flags,safety))
         st.error("Peringatan gawat darurat telah tercatat untuk kunjungan ini. Inferensi AI tetap diblokir; tindak lanjuti keadaan klinis di luar aplikasi.")
         return
+    # Kelompok khusus yang sudah ditandai juga menahan inferensi setelah browser/session refresh.
+    with factory() as session:
+        group_logs=session.scalars(
+            select(AuditLog).where(
+                AuditLog.action=="ai.special_population_blocked",
+                AuditLog.entity_type=="Visit",
+                AuditLog.entity_id==str(visit.id),
+            ).order_by(AuditLog.id.asc())
+        ).all()
+    blocked_groups=set()
+    for log in group_logs:
+        try:
+            blocked_groups.update(str(x) for x in json.loads(log.details_json).get("groups",[]))
+        except (json.JSONDecodeError,TypeError):
+            continue
+    if blocked_groups:
+        st.warning("Hasil AI ditahan untuk kelompok khusus yang tercatat: "+", ".join(sorted(blocked_groups))+". Konsultasikan langsung ke dokter/fasilitas kesehatan.")
+        return
+
     last_flag=st.session_state.get("rme_active_red_flags")
     if isinstance(last_flag,dict) and last_flag.get("visit_id")==visit.id:
         st.error(red_flag_message(last_flag.get("flags",[]),safety))
