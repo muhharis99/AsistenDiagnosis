@@ -161,3 +161,20 @@ Jalankan tes:
     pytest -q
 
 Fase ini masih prototipe lokal dengan data fiktif; tidak ada klaim validasi klinis, kepatuhan penuh regulasi, atau integrasi SATUSEHAT.
+
+
+## 7. Fase 3 — ICD-10 dan SATUSEHAT mock
+
+RME Fase 3 menambahkan diagnosis manual dokter yang terpisah dari tabel saran AI, registry terminologi ICD-10 edisi 2010 dengan status sumber, verifikasi kode oleh Perekam Medis, pembangun resource FHIR R4 Condition dan Composition, serta outbox idempoten untuk simulator lokal.
+
+Sebelum masuk outbox, sistem meminta kunjungan finished, resume final, persetujuan pembukaan/pemanfaatan data aktif, diagnosis dokter berstatus confirmed, dan kode yang diverifikasi Perekam Medis. Payload tersimpan bersama SHA-256 untuk inspeksi lokal. Respons MOCK_ACCEPTED hanyalah simulasi perangkat lunak; **tidak ada OAuth, HTTP, atau transmisi ke SATUSEHAT pada fase ini**.
+
+Registry awal data/icd10_seed_2010.csv hanyalah contoh kecil yang sumbernya dirujuk, **bukan katalog ICD-10 lengkap**. Gunakan daftar ICD-10 edisi 2010 yang diperoleh dari sumber resmi dan proses review organisasi sebelum menambahkannya. Tidak ada pemetaan otomatis dari kandidat AI ke diagnosis atau kode.
+
+Dokumentasi rujukan yang diperiksa:
+- SATUSEHAT — ICD-10 versi 2010: https://satusehat.kemkes.go.id/platform/docs/id/terminology/icd/icd-10/
+- SATUSEHAT — resource Condition: https://satusehat.kemkes.go.id/platform/docs/id/fhir/resources/condition/
+- SATUSEHAT — Composition: https://satusehat.kemkes.go.id/platform/docs/id/fhir/resources/composition/
+- SATUSEHAT — Playbook Resume Medis Rawat Jalan: https://satusehat.kemkes.go.id/platform/docs/id/interoperability/rme-rawat-jalan/
+
+Keterbatasan: ini belum validator profil SATUSEHAT lengkap, belum menyelesaikan identitas IHS/MPI, mapping organization/practitioner/location, OAuth sandbox, OperationOutcome, atau transmisi nyata. Reference bertanda demo- serta URL domain .invalid sengaja menjadi placeholder. Jangan mengubah mock menjadi sandbox/production tanpa telaah playbook dan pengujian profil resmi terbaru.
