@@ -339,3 +339,32 @@ class SATUSEHATIdMapping(Base):
 
 
 Index("ix_satusehat_mapping_type_verified", SATUSEHATIdMapping.resource_type, SATUSEHATIdMapping.verified)
+
+
+class SATUSEHATTransmission(Base):
+    """Catatan transmisi sandbox tanpa menyimpan token atau body respons mentah."""
+    __tablename__ = "satusehat_transmissions"
+    __table_args__ = (
+        UniqueConstraint("outbox_id", name="uq_satusehat_transmission_outbox"),
+        CheckConstraint(
+            "status IN ('sending','succeeded','failed','uncertain','blocked')",
+            name="ck_satusehat_transmission_status",
+        ),
+        CheckConstraint("is_demo = true", name="ck_satusehat_transmission_demo_only"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    outbox_id: Mapped[int] = mapped_column(ForeignKey("outbox_sync.id", ondelete="RESTRICT"), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="sending")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    external_resource_id: Mapped[str | None] = mapped_column(String(128))
+    http_status: Mapped[int | None] = mapped_column(Integer)
+    operation_outcome_codes_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    response_summary: Mapped[str | None] = mapped_column(String(500))
+    last_attempt_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+Index("ix_satusehat_transmission_status", SATUSEHATTransmission.status, SATUSEHATTransmission.updated_at)
