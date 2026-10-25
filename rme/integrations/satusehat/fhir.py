@@ -13,6 +13,44 @@ FHIR_VERIFICATION_STATUS_SYSTEM = "http://terminology.hl7.org/CodeSystem/conditi
 FHIR_COMPOSITION_CONFIDENTIALITY = "N"
 MOCK_ONLY_NOTICE = "ID referensi demo adalah placeholder, bukan nomor IHS SATUSEHAT."
 
+REMOTE_REFERENCE_TYPES = {
+    "Patient", "Practitioner", "Organization", "Location", "Encounter",
+    "Condition", "Composition", "Observation", "ClinicalImpression",
+}
+REMOTE_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,127}$")
+REMOTE_REFERENCE_PATTERN = re.compile(
+    r"^(Patient|Practitioner|Organization|Location|Encounter|Condition|Composition|Observation|ClinicalImpression)/([A-Za-z0-9][A-Za-z0-9.-]{0,127})$"
+)
+
+
+def _is_safe_remote_id(value: Any) -> bool:
+    if not isinstance(value, str) or not REMOTE_ID_PATTERN.fullmatch(value):
+        return False
+    lowered = value.casefold()
+    return not any(marker in lowered for marker in ("demo", "example", ".invalid"))
+
+
+def _validate_remote_reference(
+    reference: Any,
+    label: str,
+    *,
+    allowed_types: set[str] | None = None,
+) -> None:
+    """Require a relative reference to a plausible server-assigned resource ID."""
+    if not isinstance(reference, str):
+        raise ValueError(f"{label} harus berupa relative reference FHIR.")
+    match = REMOTE_REFERENCE_PATTERN.fullmatch(reference)
+    if match is None:
+        raise ValueError(f"{label} harus menunjuk ID resource server yang valid.")
+    resource_type, external_id = match.groups()
+    if resource_type not in REMOTE_REFERENCE_TYPES:
+        raise ValueError(f"{label} memakai tipe resource yang tidak diizinkan.")
+    if allowed_types is not None and resource_type not in allowed_types:
+        raise ValueError(f"{label} menunjuk tipe resource yang tidak sesuai.")
+    if not _is_safe_remote_id(external_id):
+        raise ValueError(f"{label} masih memakai placeholder atau ID eksternal yang tidak valid.")
+
+
 
 def _as_utc(value: datetime | None) -> str:
     stamp = value or datetime.now(timezone.utc)
@@ -164,14 +202,14 @@ def validate_sandbox_resource(resource: dict[str, Any]) -> None:
     if resource.get("id") and resource_type != "Encounter":
         raise ValueError("Payload create tidak boleh memakai ID lokal; biarkan server menetapkan ID.")
     if resource_type == "Encounter":
-        ext_id = str(resource.get("id") or "")
-        if not ext_id or any(marker in ext_id.casefold() for marker in ("demo", "example", ".invalid")):
+        ext_id = resource.get("id")
+        if not _is_safe_remote_id(ext_id):
             raise ValueError("Update Encounter harus memakai ID server yang sudah diverifikasi.")
 
     def _ref(element: Any, prefix: str, label: str) -> None:
-        reference = ((element or {}).get("reference") or "")
-        if not isinstance(reference, str) or not reference.startswith(prefix) or len(reference) <= len(prefix):
-            raise ValueError(f"{label} harus menunjuk ID resource yang sudah dipetakan.")
+        reference = (element or {}).get("reference")
+        expected_type = prefix.rstrip("/")
+        _validate_remote_reference(reference, label, allowed_types={expected_type})
 
     def _refs(items: Any, prefix: str, label: str) -> None:
         if not isinstance(items, list) or not items:
@@ -212,9 +250,11 @@ def validate_sandbox_resource(resource: dict[str, Any]) -> None:
             if not section.get("title") or not (((section.get("code") or {}).get("coding") or [{}])[0].get("code")):
                 raise ValueError("Setiap Composition.section harus memiliki title dan coding.")
             for entry in section.get("entry") or []:
-                ref = (entry or {}).get("reference") or ""
-                if ref and not re.fullmatch(r"(Condition|Observation|ClinicalImpression)/[A-Za-z0-9.-]{1,128}", ref):
-                    raise ValueError("Composition.section.entry memiliki reference yang tidak valid.")
+                _validate_remote_reference(
+                    (entry or {}).get("reference"),
+                    "Composition.section.entry",
+                    allowed_types={"Condition", "Observation", "ClinicalImpression"},
+                )
     elif resource_type == "Encounter":
         identifier = ((resource.get("identifier") or [{}])[0])
         if identifier.get("use") != "official" or not str(identifier.get("system") or "").startswith("http://sys-ids.kemkes.go.id/encounter/") or not identifier.get("value"):
@@ -252,9 +292,26 @@ def validate_sandbox_resource(resource: dict[str, Any]) -> None:
             _ref(problem, "Condition/", "ClinicalImpression.problem")
         for investigation in resource.get("investigation") or []:
             for item in investigation.get("item") or []:
-                ref = (item or {}).get("reference") or ""
-                if not re.fullmatch(r"(Observation|Condition)/[A-Za-z0-9.-]{1,128}", ref):
-                    raise ValueError("ClinicalImpression.investigation.item reference tidak valid.")
+                _validate_remote_reference(
+                    (item or {}).get("reference"),
+                    "ClinicalImpression.investigation.item",
+                    allowed_types={"Observation", "Condition"},
+                )
+
+
+    # Defense in depth: check every FHIR Reference element, including future nested
+    # fields not covered by the resource-specific checks above.
+    def _scan_references(value: Any, path: str = "resource") -> None:
+        if isinstance(value, dict):
+            if "reference" in value:
+                _validate_remote_reference(value["reference"], f"{path}.reference")
+            for key, child in value.items():
+                _scan_references(child, f"{path}.{key}")
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                _scan_references(child, f"{path}[{index}]")
+
+    _scan_references(resource)
 
 
 
