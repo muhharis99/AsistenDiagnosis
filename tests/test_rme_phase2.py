@@ -21,7 +21,7 @@ os.environ.setdefault("DATABASE_URL","sqlite:///:memory:")
 
 from rme.ai_service import AIConsentRequired, request_symptom_suggestion, review_ai_suggestion
 from rme.db import build_engine, initialize_database, session_factory
-from rme.models import AISuggestion, AISuggestionReview, AuditLog, Base, Consent, Patient, User, Visit
+from rme.models import AISuggestion, AISuggestionReview, AuditLog, Base, Consent, Diagnosis, Patient, User, Visit
 from rme.schemas import AISuggestionReviewInput, PatientCreate, VisitCreate
 from rme.security import SensitiveFieldCipher
 from rme.services import create_patient, create_visit, ensure_reference_data, transition_visit
@@ -204,7 +204,7 @@ def test_suggestion_is_saved_and_review_does_not_create_formal_diagnosis(context
         assert review.action=="accepted_as_working_hypothesis"
         visit=session.get(Visit,visit_id)
         assert visit.status=="in-progress"
-        assert "diagnoses" not in Base.metadata.tables
+        assert session.scalar(select(Diagnosis.id).where(Diagnosis.visit_id == visit_id)) is None
         audit=session.scalar(select(AuditLog).where(AuditLog.action=="ai.suggestion_reviewed"))
         assert audit is not None
         assert "formal_diagnosis_created" in audit.details_json

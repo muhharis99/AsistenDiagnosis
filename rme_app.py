@@ -14,6 +14,7 @@ from rme.models import User,Role,Patient,Visit,Anamnesis,VitalSigns,ResumeMedica
 from rme.schemas import PatientCreate,VisitCreate,AnamnesisInput,VitalSignsInput,ResumeInput,AddendumInput
 from rme.security import LoginRateLimiter,AuthenticationError,SensitiveFieldCipher,append_audit,authenticate,require_permission,verify_audit_chain
 from rme.ui_ai import render_ai_panel, render_ai_evaluation
+from rme.ui_phase3 import render_diagnosis_panel, render_satusehat_panel
 from rme.services import BusinessRuleError,create_patient,create_visit,list_visits,transition_visit,save_anamnesis,save_vitals,save_resume_draft,finalize_resume,correct_final_resume,create_addendum,patient_view,search_patients,get_patient,CorrectionWindowExpired
 
 st.set_page_config(page_title="RME Rawat Jalan — Prototipe",page_icon="🩺",layout="wide")
@@ -187,7 +188,9 @@ def examination(factory,user,cipher):
                 st.success(f"Tanda vital tersimpan. IMT demo: {saved.bmi} kg/m²; LOINC/UCUM masih TODO-VERIFIKASI."); st.rerun()
         except Exception as e: st.error(str(e))
     with tabs[2]: st.info("Placeholder. Pemeriksaan laboratorium/radiologi di luar lingkup Fase 1.")
-    with tabs[3]: render_ai_panel(factory,user,v,p,age)
+    with tabs[3]:
+        render_ai_panel(factory,user,v,p,age)
+        render_diagnosis_panel(factory,user,vid)
     with tabs[4]: st.info("Rencana dicatat pada resume. Tidak ada peresepan/dosis otomatis.")
     with tabs[5]:
         st.caption("Tanda tangan pada fase ini hanya simulasi hash; bukan TTE tersertifikasi.")
@@ -324,7 +327,7 @@ def main():
     st.markdown("<style>.stApp{background:#f6f8fb} [data-testid='stSidebar']{background:#eef2f7} button{min-height:40px}</style>",unsafe_allow_html=True)
     try: factory,cipher,cfg=runtime()
     except Exception as e: st.error(f"Runtime belum siap: {e}"); st.code("python scripts/init_demo.py\nstreamlit run rme_app.py"); st.stop()
-    st.title("RME Rawat Jalan — Prototipe Fase 2")
+    st.title("RME Rawat Jalan — Prototipe Fase 3")
     if not st.session_state.get("user_id"): login(factory); return
     user=current_user(factory,cfg)
     if not user: login(factory); return
@@ -340,7 +343,7 @@ def main():
     elif pick=="Pemeriksaan": examination(factory,user,cipher)
     elif pick=="Resume Medis": resumes(factory,user,cipher)
     elif pick=="Administrasi": administration(factory,user)
-    elif pick=="Integrasi SATUSEHAT": st.header("Integrasi SATUSEHAT"); st.info("Belum ada transmisi data. Mock/outbox/FHIR sandbox dibangun pada Fase 3.")
+    elif pick=="Integrasi SATUSEHAT": render_satusehat_panel(factory,user)
     elif pick=="Evaluasi Model": render_ai_evaluation()
     else:
         st.header("Tentang & Keterbatasan")

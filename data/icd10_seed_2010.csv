@@ -1,0 +1,3 @@
+code,display,edition,status,source_url,source_note
+A41.9,"Sepsis, unspecified",2010,source_verified,https://satusehat.kemkes.go.id/platform/docs/id/fhir/resources/condition/,Contoh kode dan display dicantumkan pada dokumentasi resmi SATUSEHAT Condition; cek ulang kecocokan dokumentasi pasien oleh Perekam Medis.
+C47.0,"Malignant neoplasm, peripheral nerves of head, face and neck",2010,source_verified,https://satusehat.kemkes.go.id/platform/docs/id/fhir/resources/condition/,Contoh kode dan display dicantumkan pada dokumentasi resmi SATUSEHAT Condition; cek ulang kecocokan dokumentasi pasien oleh Perekam Medis.

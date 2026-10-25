@@ -252,3 +252,58 @@ class AISuggestionReview(Base):
 
 Index("ix_ai_suggestion_visit_created", AISuggestion.visit_id, AISuggestion.created_at)
 Index("ix_ai_suggestion_review_suggestion_created", AISuggestionReview.suggestion_id, AISuggestionReview.created_at)
+
+
+class Diagnosis(Base):
+    """Diagnosis yang dimasukkan secara manual oleh dokter, terpisah dari saran AI."""
+    __tablename__ = "diagnoses"
+    __table_args__ = (
+        UniqueConstraint("visit_id", "icd10_code", name="uq_diagnosis_visit_icd10"),
+        CheckConstraint("status IN ('provisional','confirmed')", name="ck_diagnosis_status"),
+        CheckConstraint("is_demo = true", name="ck_diagnosis_demo_only"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    visit_id: Mapped[int] = mapped_column(ForeignKey("visits.id", ondelete="RESTRICT"), nullable=False, index=True)
+    clinical_label: Mapped[str] = mapped_column(Text, nullable=False)
+    icd10_code: Mapped[str] = mapped_column(String(12), nullable=False, index=True)
+    icd10_display: Mapped[str] = mapped_column(String(255), nullable=False)
+    icd10_edition: Mapped[str] = mapped_column(String(12), nullable=False, default="2010")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="provisional")
+    diagnosis_set_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    code_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    code_verified_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    code_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    code_verification_note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class OutboxSync(Base):
+    """Resource FHIR demo yang menunggu/sudah disimulasikan; tidak melakukan transmisi jaringan."""
+    __tablename__ = "outbox_sync"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_outbox_idempotency_key"),
+        CheckConstraint("status IN ('queued','mock_accepted','failed','blocked')", name="ck_outbox_status"),
+        CheckConstraint("is_demo = true", name="ck_outbox_demo_only"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    visit_id: Mapped[int] = mapped_column(ForeignKey("visits.id", ondelete="RESTRICT"), nullable=False, index=True)
+    resource_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False)
+    payload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(220), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="queued")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    response_summary: Mapped[str | None] = mapped_column(String(500))
+    last_error: Mapped[str | None] = mapped_column(String(500))
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    last_attempt_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+Index("ix_diagnosis_visit_status", Diagnosis.visit_id, Diagnosis.status)
+Index("ix_outbox_status_created", OutboxSync.status, OutboxSync.created_at)
