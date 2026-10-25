@@ -30,11 +30,11 @@ def seed_demo_patients(session: Session,cipher:SensitiveFieldCipher,count:int=3)
     fake=Faker("id_ID"); fake.seed_instance(20261025)
     registration=session.scalar(select(User).options(joinedload(User.role)).where(User.username=="pendaftaran_demo"))
     doctor=session.scalar(select(User).options(joinedload(User.role)).where(User.username=="dokter_demo"))
-    for _ in range(count):
+    for patient_index in range(count):
         nik=str(fake.unique.random_int(min=1_000_000_000_000_000,max=9_999_999_999_999_999))
         born=fake.date_of_birth(minimum_age=18,maximum_age=80)
         p=create_patient(session,registration,cipher,PatientCreate(name=fake.name(),nik=nik,birth_date=born,
             sex=fake.random_element(elements=("Laki-laki","Perempuan")),occupation="Data demo",education="Data demo",
             religion="Belum diisi",marital_status="Belum diisi",allergies="Belum dikaji",is_demo=True),
-            general_consent=True,data_consent=False,ai_consent=False)
+            general_consent=True,data_consent=False,ai_consent=(patient_index == 0))
         create_visit(session,registration,VisitCreate(patient_id=p.id,poli=fake.random_element(elements=("Poli Umum","Poli Penyakit Dalam")),dpjp_user_id=doctor.id))
