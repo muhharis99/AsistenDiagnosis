@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from config import SYMPTOM_METADATA_PATH, SYMPTOM_MODEL_PATH
 from explain import explain_symptom_candidates, insufficient_information, ordered_topk, suggest_followup_symptoms
 from rme import __version__ as RME_CODE_VERSION
-from rme.models import AISuggestion, AISuggestionReview, Consent, ModelRegistry, Patient, User, Visit
+from rme.models import AISuggestion, AISuggestionReview, AuditLog, Consent, ModelRegistry, Patient, User, Visit
 from rme.schemas import AISuggestionReviewInput
 from rme.security import append_audit, require_permission
 from safety import detect_red_flags, load_safety_config
@@ -127,8 +127,25 @@ def request_symptom_suggestion(
     symptoms = list(dict.fromkeys(str(item).strip() for item in (selected_symptoms or []) if str(item).strip()))
     safety_config = load_safety_config()
 
-    # Red flag diperiksa paling awal dan terpisah dari inferensi ML.
-    red_flags = detect_red_flags(symptoms, explicit_red_flags, safety_config)
+    # Red flag diperiksa sebelum ML. Alert yang sudah tercatat tetap memblokir inferensi pada kunjungan ini.
+    current_flags = detect_red_flags(symptoms, explicit_red_flags, safety_config)
+    prior_logs = session.scalars(
+        select(AuditLog).where(
+            AuditLog.action == "ai.red_flag_blocked",
+            AuditLog.entity_type == "Visit",
+            AuditLog.entity_id == str(visit.id),
+        ).order_by(AuditLog.id.asc())
+    ).all()
+    prior_ids: set[str] = set()
+    for log in prior_logs:
+        try:
+            prior_ids.update(str(x) for x in json.loads(log.details_json).get("red_flag_ids", []))
+        except (json.JSONDecodeError, TypeError):
+            continue
+    current_ids = {str(item.get("id")) for item in current_flags}
+    all_ids = prior_ids | current_ids
+    red_flag_catalog = {str(item.get("id")): item for item in safety_config.get("red_flags", [])}
+    red_flags = [dict(red_flag_catalog[item]) for item in sorted(all_ids) if item in red_flag_catalog]
     if red_flags:
         append_audit(
             session, user, "ai.red_flag_blocked", "Visit", visit.id,
@@ -137,7 +154,7 @@ def request_symptom_suggestion(
         session.commit()
         return {
             "status": "red_flag_blocked",
-            "message": "Gejala gawat darurat terdeteksi. Jangan menunggu hasil AI; segera ke IGD atau hubungi 112 / 119.",
+            "message": "Gejala gawat darurat tercatat pada kunjungan ini. Jangan menunggu hasil AI; segera ke IGD atau hubungi 112 / 119. Inferensi tetap diblokir untuk kunjungan ini.",
             "red_flags": red_flags,
         }
 
