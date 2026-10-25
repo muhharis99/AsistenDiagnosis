@@ -262,8 +262,12 @@ def _prepare_composition(
         "Tindak lanjut": ("Rencana Tindak Lanjut", "http://loinc.org", "8653-8", "Hospital Discharge instructions"),
     }
     mapped_sections = []
+    diagnosis_entries = []
     for section in payload.get("section") or []:
         old_title = str(section.get("title") or "")
+        if old_title == "Diagnosis terverifikasi":
+            diagnosis_entries.extend(section.get("entry") or [])
+            continue
         mapping = section_mapping.get(old_title)
         if not mapping:
             raise SATUSEHATWorkflowError("Ada section Composition yang belum punya mapping terminologi Fase 5.")
@@ -272,6 +276,11 @@ def _prepare_composition(
         mapped["title"] = title
         mapped["code"] = {"coding": [{"system": system, "code": code, "display": display}]}
         mapped_sections.append(mapped)
+    if diagnosis_entries:
+        diagnosis_section = next((item for item in mapped_sections if item["title"] == "Diagnosis"), None)
+        if diagnosis_section is None:
+            raise SATUSEHATWorkflowError("Section Diagnosis tidak ditemukan untuk mereferensikan Condition.")
+        diagnosis_section["entry"] = list(diagnosis_section.get("entry") or []) + diagnosis_entries
     payload["section"] = mapped_sections
     # Location is checked/mapped before allowing submission, even when this minimal Composition
     # profile does not include a Location element directly.
