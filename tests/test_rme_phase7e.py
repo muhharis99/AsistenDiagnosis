@@ -52,17 +52,19 @@ def _uncertain_condition(context, transport):
         assert row.status == "uncertain"
     post = next(call for call in transport.calls if call[0] == "POST" and call[1].endswith("/Condition"))
     identifier = post[2]["json"]["identifier"][0]
-    return factory, users, outbox_ids["Condition"], client, identifier
+    return factory, users, outbox_ids["Condition"], client, identifier, post[2]["json"]
 
 
 def test_uncertain_post_reconciles_only_after_one_exact_server_match(context):
     transport = ReconciliationTransport(bundle_total=0)
-    factory, users, outbox_id, client, identifier = _uncertain_condition(context, transport)
+    factory, users, outbox_id, client, identifier, sent_payload = _uncertain_condition(context, transport)
     transport.bundle_total = 1
     transport.resources = [{
         "resourceType": "Condition",
         "id": "condition-server-123",
         "identifier": [identifier],
+        "subject": sent_payload["subject"],
+        "encounter": sent_payload["encounter"],
     }]
 
     with factory() as session:
@@ -121,11 +123,13 @@ def test_zero_search_results_keep_uncertain_and_do_not_retry_write(context):
 
 def test_multiple_server_matches_remain_uncertain_for_manual_review(context):
     transport = ReconciliationTransport(bundle_total=0)
-    factory, users, outbox_id, client, identifier = _uncertain_condition(context, transport)
+    factory, users, outbox_id, client, identifier, sent_payload = _uncertain_condition(context, transport)
     transport.bundle_total = 2
     transport.resources = [
-        {"resourceType": "Condition", "id": "condition-server-123", "identifier": [identifier]},
-        {"resourceType": "Condition", "id": "condition-server-456", "identifier": [identifier]},
+        {"resourceType": "Condition", "id": "condition-server-123", "identifier": [identifier],
+         "subject": sent_payload["subject"], "encounter": sent_payload["encounter"]},
+        {"resourceType": "Condition", "id": "condition-server-456", "identifier": [identifier],
+         "subject": sent_payload["subject"], "encounter": sent_payload["encounter"]},
     ]
 
     with factory() as session:
