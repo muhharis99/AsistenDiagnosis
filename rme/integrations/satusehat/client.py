@@ -15,7 +15,7 @@ from rme.integrations.satusehat.mapping import SANDBOX_BASE_URL, SANDBOX_TOKEN_U
 
 ALLOWED_RESOURCE_TYPES = {
     "Patient", "Practitioner", "Organization", "Location", "Encounter",
-    "Condition", "Composition",
+    "Condition", "Composition", "Observation", "ClinicalImpression",
 }
 NIK_PATTERN = re.compile(r"^[0-9]{16}$")
 RESOURCE_PATH_PATTERN = re.compile(r"^[A-Za-z]+(?:/[A-Za-z0-9.-]+)?$")
