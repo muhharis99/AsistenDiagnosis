@@ -262,6 +262,7 @@ def test_outbox_condition_then_composition_is_posted_once_and_uses_verified_ids(
     assert "id" not in condition_payload
     assert condition_payload["subject"]["reference"] == "Patient/100000030009"
     assert condition_payload["identifier"][0]["system"] == "http://sys-ids.kemkes.go.id/condition/100000004"
+    assert post_call[2]["headers"]["Content-Type"] == "application/json"
 
     with factory() as session:
         composition = transmit_outbox_item_sandbox(
