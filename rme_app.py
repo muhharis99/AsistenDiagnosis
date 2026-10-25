@@ -13,10 +13,11 @@ from rme.db import build_engine,initialize_database,session_factory
 from rme.models import User,Role,Patient,Visit,Anamnesis,VitalSigns,ResumeMedical,ResumeAddendum,AuditLog,ModelRegistry
 from rme.schemas import PatientCreate,VisitCreate,AnamnesisInput,VitalSignsInput,ResumeInput,AddendumInput
 from rme.security import LoginRateLimiter,AuthenticationError,SensitiveFieldCipher,append_audit,authenticate,require_permission,verify_audit_chain
+from rme.ui_ai import render_ai_panel
 from rme.services import BusinessRuleError,create_patient,create_visit,list_visits,transition_visit,save_anamnesis,save_vitals,save_resume_draft,finalize_resume,correct_final_resume,create_addendum,patient_view,search_patients,get_patient,CorrectionWindowExpired
 
 st.set_page_config(page_title="RME Rawat Jalan — Prototipe",page_icon="🩺",layout="wide")
-DISCLAIMER="PROTOTIPE — DATA FIKTIF. Bukan untuk pelayanan klinis nyata. AI belum terhubung pada Fase 1; diagnosis akhir ditetapkan dokter. Tanda tangan di sini simulasi, bukan TTE tersertifikasi."
+DISCLAIMER="PROTOTIPE — DATA FIKTIF. Bukan untuk pelayanan klinis nyata. AI hanya memberi saran dan tidak menetapkan diagnosis resmi. Tanda tangan di sini simulasi, bukan TTE tersertifikasi."
 
 @st.cache_resource
 def runtime():
@@ -186,12 +187,12 @@ def examination(factory,user,cipher):
                 st.success(f"Tanda vital tersimpan. IMT demo: {saved.bmi} kg/m²; LOINC/UCUM masih TODO-VERIFIKASI."); st.rerun()
         except Exception as e: st.error(str(e))
     with tabs[2]: st.info("Placeholder. Pemeriksaan laboratorium/radiologi di luar lingkup Fase 1.")
-    with tabs[3]: st.warning("AI belum disambungkan. Diagnosis final tidak diisi otomatis; pemetaan ICD-10 pada Fase 3.")
+    with tabs[3]: render_ai_panel(factory,user,v,p,age)
     with tabs[4]: st.info("Rencana dicatat pada resume. Tidak ada peresepan/dosis otomatis.")
     with tabs[5]:
         st.caption("Tanda tangan pada fase ini hanya simulasi hash; bukan TTE tersertifikasi.")
         if r and r.status=="final":
-            st.success(f"Resume FINAL versi {r.version} · {_wib(r.finalized_at)}")
+            st.success(f"Resume FINAL versi {r.version} · {wib(r.finalized_at)}")
             st.write("**S**",r.subjective); st.write("**O**",r.objective); st.write("**A**",r.assessment); st.write("**P**",r.plan); st.write("**Tindak lanjut**",r.follow_up)
             st.code(f"{r.signature_method}\n{r.signature_digest}")
             try:
