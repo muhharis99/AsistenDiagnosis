@@ -10,15 +10,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from rme.integrations.satusehat.client import SATUSEHATClient, SATUSEHATClientError
-from rme.integrations.satusehat.fhir import validate_sandbox_resource
+from rme.integrations.satusehat.fhir import (build_condition, build_composition, build_encounter_update, build_vital_observations, build_clinical_impression, validate_sandbox_resource)
 from rme.integrations.satusehat.mapping import (
     build_visit_sandbox_preflight,
     is_safe_external_id,
     location_local_key,
 )
 from rme.models import (
-    Consent, Diagnosis, OutboxSync, Patient, ResumeMedical, SATUSEHATIdMapping,
-    SATUSEHATTransmission, User, Visit, utc_now,
+    Anamnesis, Consent, Diagnosis, Facility, OutboxSync, Patient, ResumeMedical, SATUSEHATIdMapping,
+    SATUSEHATTransmission, User, Visit, VitalSigns, utc_now,
 )
 from rme.security import append_audit, require_permission
 
@@ -130,7 +130,7 @@ def _condition_external_reference(
         select(OutboxSync).where(
             OutboxSync.visit_id == visit_id, OutboxSync.resource_type == "Condition",
             OutboxSync.is_demo.is_(True),
-        )
+        ).order_by(OutboxSync.id.desc())
     ).all()
     target = None
     for item in rows:
@@ -285,6 +285,140 @@ def _prepare_composition(
     # Location is checked/mapped before allowing submission, even when this minimal Composition
     # profile does not include a Location element directly.
     _ = location_id
+    return payload
+
+
+def _external_id_for_demo_resource(
+    session: Session, visit_id: int, resource_type: str, demo_id: str
+) -> str:
+    rows = session.scalars(
+        select(OutboxSync).where(
+            OutboxSync.visit_id == visit_id,
+            OutboxSync.resource_type == resource_type,
+            OutboxSync.is_demo.is_(True),
+        ).order_by(OutboxSync.id.desc())
+    ).all()
+    for item in rows:
+        try:
+            payload = json.loads(item.payload_json)
+        except json.JSONDecodeError:
+            continue
+        if payload.get("id") != demo_id:
+            continue
+        sent = session.scalar(select(SATUSEHATTransmission).where(SATUSEHATTransmission.outbox_id == item.id))
+        if sent is not None and sent.status == "succeeded" and sent.external_resource_id:
+            return sent.external_resource_id
+    raise SATUSEHATWorkflowError(
+        f"Resource {resource_type} yang dirujuk belum dikirim atau belum menerima ID eksternal terkonfirmasi."
+    )
+
+
+def _prepare_observation(
+    session: Session, outbox: OutboxSync, visit: Visit, patient: Patient, organization_ihs: str
+) -> dict[str, Any]:
+    payload = json.loads(outbox.payload_json)
+    vitals = session.scalar(select(VitalSigns).where(VitalSigns.visit_id == visit.id))
+    if vitals is None:
+        raise SATUSEHATWorkflowError("Tanda vital sumber tidak ditemukan.")
+    if not _latest_consent(session, patient.id):
+        raise SATUSEHATWorkflowError("Consent pembukaan/pemanfaatan data sudah tidak aktif.")
+    patient_id = _verified_mapping(session, "Patient", str(patient.id))
+    encounter_id = _verified_mapping(session, "Encounter", str(visit.id))
+    practitioner_id = _verified_mapping(session, "Practitioner", str(vitals.recorded_by))
+    organization_id = _verified_mapping(
+        session, "Organization", str(visit.facility_id), expected_external_id=organization_ihs
+    )
+    demo_id = str(payload.get("id") or "")
+    if not re.fullmatch(r"demo-observation-[0-9]+-[A-Za-z0-9-]+", demo_id):
+        raise SATUSEHATWorkflowError("ID Observation demo tidak dikenal.")
+    payload.pop("id", None)
+    payload["identifier"] = [{
+        "use": "official",
+        "system": f"http://sys-ids.kemkes.go.id/observation/{organization_id}",
+        "value": f"vitals-{vitals.id}-{demo_id.rsplit('-', 1)[-1]}",
+    }]
+    replacements = {
+        f"Patient/demo-patient-{patient.id}": f"Patient/{patient_id}",
+        f"Encounter/demo-encounter-{visit.id}": f"Encounter/{encounter_id}",
+        f"Practitioner/demo-practitioner-{vitals.recorded_by}": f"Practitioner/{practitioner_id}",
+    }
+    return _map_references(payload, replacements)
+
+
+def _prepare_clinical_impression(
+    session: Session, outbox: OutboxSync, visit: Visit, patient: Patient, resume: ResumeMedical,
+    organization_ihs: str
+) -> dict[str, Any]:
+    payload = json.loads(outbox.payload_json)
+    if not _latest_consent(session, patient.id):
+        raise SATUSEHATWorkflowError("Consent pembukaan/pemanfaatan data sudah tidak aktif.")
+    patient_id = _verified_mapping(session, "Patient", str(patient.id))
+    encounter_id = _verified_mapping(session, "Encounter", str(visit.id))
+    assessor_local = resume.signed_by or resume.created_by
+    practitioner_id = _verified_mapping(session, "Practitioner", str(assessor_local))
+    _verified_mapping(session, "Organization", str(visit.facility_id), expected_external_id=organization_ihs)
+    demo_id = str(payload.get("id") or "")
+    if not demo_id.startswith(f"demo-clinical-impression-{visit.id}-v"):
+        raise SATUSEHATWorkflowError("ID ClinicalImpression demo tidak dikenal.")
+    for problem in payload.get("problem") or []:
+        reference = (problem or {}).get("reference") or ""
+        mapped = _condition_external_reference(session, visit.id, reference)
+        problem["reference"] = mapped
+    for investigation in payload.get("investigation") or []:
+        for item in investigation.get("item") or []:
+            reference = (item or {}).get("reference") or ""
+            match = re.fullmatch(r"Observation/(demo-observation-[0-9]+-[A-Za-z0-9-]+)", reference)
+            if not match:
+                raise SATUSEHATWorkflowError("Referensi Observation dalam ClinicalImpression tidak valid.")
+            item["reference"] = f"Observation/{_external_id_for_demo_resource(session, visit.id, 'Observation', match.group(1))}"
+    payload.pop("id", None)
+    payload["subject"] = {"reference": f"Patient/{patient_id}"}
+    payload["encounter"] = {"reference": f"Encounter/{encounter_id}"}
+    payload["assessor"] = {"reference": f"Practitioner/{practitioner_id}"}
+    return payload
+
+
+def _prepare_encounter_update(
+    session: Session, outbox: OutboxSync, visit: Visit, patient: Patient, organization_ihs: str
+) -> dict[str, Any]:
+    payload = json.loads(outbox.payload_json)
+    if payload.get("resourceType") != "Encounter" or not visit.dpjp_user_id:
+        raise SATUSEHATWorkflowError("Encounter update memerlukan DPJP dan payload yang benar.")
+    patient_id = _verified_mapping(session, "Patient", str(patient.id))
+    encounter_id = _verified_mapping(session, "Encounter", str(visit.id))
+    practitioner_id = _verified_mapping(session, "Practitioner", str(visit.dpjp_user_id))
+    organization_id = _verified_mapping(
+        session, "Organization", str(visit.facility_id), expected_external_id=organization_ihs
+    )
+    location_id = _verified_mapping(session, "Location", location_local_key(visit))
+    diagnosis_rows = session.scalars(select(Diagnosis).where(
+        Diagnosis.visit_id == visit.id, Diagnosis.status == "confirmed", Diagnosis.code_verified.is_(True)
+    ).order_by(Diagnosis.id)).all()
+    if not diagnosis_rows:
+        raise SATUSEHATWorkflowError("Encounter update memerlukan diagnosis dokter yang kode ICD-10-nya diverifikasi.")
+    for diagnosis in diagnosis_rows:
+        condition_ref = f"Condition/demo-condition-{diagnosis.id}"
+        external_ref = _condition_external_reference(session, visit.id, condition_ref)
+        entry = next((row for row in payload.get("diagnosis", [])
+                      if (row.get("condition") or {}).get("reference") == condition_ref), None)
+        if entry is None:
+            raise SATUSEHATWorkflowError("Encounter tidak memuat semua diagnosis terverifikasi.")
+        entry["condition"]["reference"] = external_ref
+    payload["id"] = encounter_id
+    payload["identifier"] = [{
+        "use": "official", "system": f"http://sys-ids.kemkes.go.id/encounter/{organization_id}",
+        "value": visit.visit_number,
+    }]
+    replacements = {
+        f"Patient/demo-patient-{patient.id}": f"Patient/{patient_id}",
+        f"Practitioner/demo-practitioner-{visit.dpjp_user_id}": f"Practitioner/{practitioner_id}",
+        f"Organization/demo-organization-{visit.facility_id}": f"Organization/{organization_id}",
+    }
+    payload = _map_references(payload, replacements)
+    for location in payload.get("location") or []:
+        local_ref = (location.get("location") or {}).get("reference") or ""
+        if local_ref.startswith("Location/demo-location-"):
+            location["location"]["reference"] = f"Location/{location_id}"
     return payload
 
 
