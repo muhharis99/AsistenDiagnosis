@@ -254,6 +254,7 @@ def test_phase6_transmits_observations_clinical_impression_and_updates_mapped_en
     encounter_call = next(call for call in transport.calls if call[0] == "PUT" and "/Encounter/" in call[1])
     payload = encounter_call[2]["json"]
     assert payload["id"] == encounter_call[1].rsplit("/", 1)[-1]
+    assert encounter_call[2]["headers"]["Content-Type"] == "application/json"
     assert payload["diagnosis"][0]["condition"]["reference"].startswith("Condition/")
     composition_call = next(call for call in transport.calls if call[0] == "POST" and call[1].endswith("/Composition"))
     composition = composition_call[2]["json"]
