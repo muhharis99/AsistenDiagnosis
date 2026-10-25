@@ -13,7 +13,7 @@ from rme.db import build_engine,initialize_database,session_factory
 from rme.models import User,Role,Patient,Visit,Anamnesis,VitalSigns,ResumeMedical,ResumeAddendum,AuditLog,ModelRegistry
 from rme.schemas import PatientCreate,VisitCreate,AnamnesisInput,VitalSignsInput,ResumeInput,AddendumInput
 from rme.security import LoginRateLimiter,AuthenticationError,SensitiveFieldCipher,append_audit,authenticate,require_permission,verify_audit_chain
-from rme.ui_ai import render_ai_panel
+from rme.ui_ai import render_ai_panel, render_ai_evaluation
 from rme.services import BusinessRuleError,create_patient,create_visit,list_visits,transition_visit,save_anamnesis,save_vitals,save_resume_draft,finalize_resume,correct_final_resume,create_addendum,patient_view,search_patients,get_patient,CorrectionWindowExpired
 
 st.set_page_config(page_title="RME Rawat Jalan — Prototipe",page_icon="🩺",layout="wide")
@@ -241,7 +241,7 @@ def resumes(factory,user,cipher):
                 if p:
                     data.append({"ID":item.id,"Status":item.status,"Versi":item.version,"No. RM":p.medical_record_no,
                                  "Nama":cipher.decrypt(p.name_ciphertext),"Kunjungan":v.visit_number,"Poli":v.poli,
-                                 "Waktu WIB":_wib(item.updated_at)})
+                                 "Waktu WIB":wib(item.updated_at)})
                     append_audit(s,user,"resume.list_read","ResumeMedical",item.id,{"status":item.status})
             s.commit()
         if not data:
@@ -324,7 +324,7 @@ def main():
     st.markdown("<style>.stApp{background:#f6f8fb} [data-testid='stSidebar']{background:#eef2f7} button{min-height:40px}</style>",unsafe_allow_html=True)
     try: factory,cipher,cfg=runtime()
     except Exception as e: st.error(f"Runtime belum siap: {e}"); st.code("python scripts/init_demo.py\nstreamlit run rme_app.py"); st.stop()
-    st.title("RME Rawat Jalan — Fondasi Fase 1")
+    st.title("RME Rawat Jalan — Prototipe Fase 2")
     if not st.session_state.get("user_id"): login(factory); return
     user=current_user(factory,cfg)
     if not user: login(factory); return
@@ -341,12 +341,12 @@ def main():
     elif pick=="Resume Medis": resumes(factory,user,cipher)
     elif pick=="Administrasi": administration(factory,user)
     elif pick=="Integrasi SATUSEHAT": st.header("Integrasi SATUSEHAT"); st.info("Belum ada transmisi data. Mock/outbox/FHIR sandbox dibangun pada Fase 3.")
-    elif pick=="Evaluasi Model": st.header("Evaluasi Model"); st.info("Registri model dan panel AI akan ditautkan pada Fase 2. Pada Fase 1 RME tidak memanggil model.")
+    elif pick=="Evaluasi Model": render_ai_evaluation()
     else:
         st.header("Tentang & Keterbatasan")
-        st.write("Tujuan: demonstrasi pendaftaran, antrean, anamnesis, tanda vital, resume SOAP, RBAC, dan audit trail pada data fiktif.")
+        st.write("Tujuan: demonstrasi pendaftaran, antrean, pemeriksaan SOAP, audit trail, dan panel saran AI pada data fiktif.")
         st.write("Bukan untuk penggunaan klinis. Enkripsi field-level diterapkan pada nama dan NIK; akses ke berkas database harus dibatasi terpisah.")
         st.markdown("[Permenkes 24/2022 tentang Rekam Medis](https://jdih.kemkes.go.id/documents/peraturan-menteri-kesehatan-nomor-24-tahun-2022) · [UU 27/2022 PDP](https://peraturan.bpk.go.id/Details/229798/uu-no-27-tahun-2022) · [Playbook Resume Medis Rawat Jalan SATUSEHAT](https://satusehat.kemkes.go.id/platform/docs/id/interoperability/rme-rawat-jalan/)")
-        st.caption("Belum ada klaim kepatuhan regulasi, validasi klinis, integrasi SATUSEHAT, atau TTE tersertifikasi.")
+        st.caption("Belum ada klaim kepatuhan regulasi, validasi klinis AI, integrasi SATUSEHAT, atau TTE tersertifikasi. Semua saran AI tetap harus ditinjau dokter.")
 
 if __name__=="__main__": main()
