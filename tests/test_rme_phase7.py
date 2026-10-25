@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pytest
+import requests
 
 from rme.integrations.satusehat.client import SATUSEHATClient, SATUSEHATClientError
 
@@ -117,3 +118,25 @@ def test_non_json_client_error_preserves_status_without_marking_uncertain():
 
     assert caught.value.status_code == 422
     assert caught.value.uncertain is False
+
+
+
+class TimeoutTransport(Transport):
+    def request(self, method, url, **kwargs):
+        if url == ENV["SATUSEHAT_TOKEN_URL"]:
+            return super().request(method, url, **kwargs)
+        self.calls.append((method, url, kwargs))
+        raise requests.Timeout("timeout")
+
+
+def test_fhir_put_timeout_is_uncertain():
+    transport = TimeoutTransport(JsonResponse(200, {"resourceType": "Encounter", "id": "N10000001"}))
+    client = SATUSEHATClient(ENV, transport=transport)
+
+    with pytest.raises(SATUSEHATClientError) as caught:
+        client.update_resource(
+            "Encounter", "N10000001",
+            {"resourceType": "Encounter", "id": "N10000001", "status": "finished"},
+        )
+
+    assert caught.value.uncertain is True
