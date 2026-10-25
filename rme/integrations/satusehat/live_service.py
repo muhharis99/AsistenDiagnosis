@@ -7,7 +7,8 @@ import re
 from datetime import timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from rme.integrations.satusehat.client import SATUSEHATClient, SATUSEHATClientError
@@ -523,15 +524,39 @@ def transmit_outbox_item_sandbox(
             )
         if transmission.status != "failed":
             raise SATUSEHATWorkflowError("Status transmisi tidak mendukung percobaan ulang.")
-        transmission.status = "sending"
-        transmission.attempt_count += 1
-        transmission.last_attempt_by = user.id
-        transmission.updated_at = utc_now()
-        transmission.http_status = None
-        transmission.operation_outcome_codes_json = "[]"
-        transmission.response_summary = None
-        transmission.completed_at = None
+
+        # Atomic compare-and-set: if two workers retry the same failed row,
+        # only one can change failed -> sending. The other must not call HTTP.
+        transmission_id = transmission.id
+        claim = session.execute(
+            update(SATUSEHATTransmission)
+            .where(
+                SATUSEHATTransmission.id == transmission_id,
+                SATUSEHATTransmission.status == "failed",
+            )
+            .values(
+                status="sending",
+                attempt_count=SATUSEHATTransmission.attempt_count + 1,
+                last_attempt_by=user.id,
+                updated_at=utc_now(),
+                http_status=None,
+                operation_outcome_codes_json="[]",
+                response_summary=None,
+                completed_at=None,
+            )
+        )
+        if claim.rowcount != 1:
+            session.rollback()
+            raise SATUSEHATWorkflowError(
+                "Transmisi sedang diproses oleh proses lain; tidak ada pengiriman ulang."
+            )
+        session.commit()
+        transmission = session.get(SATUSEHATTransmission, transmission_id)
+        if transmission is None:
+            raise SATUSEHATWorkflowError("Catatan transmisi tidak tersedia setelah klaim.")
     else:
+        # The unique outbox_id constraint is the final guard for simultaneous
+        # first attempts. A losing worker fails closed before any network call.
         transmission = SATUSEHATTransmission(
             outbox_id=outbox.id,
             status="sending",
@@ -540,9 +565,21 @@ def transmit_outbox_item_sandbox(
             is_demo=True,
         )
         session.add(transmission)
-        session.flush()
-    session.commit()
-    session.refresh(transmission)
+        try:
+            session.commit()
+        except IntegrityError as exc:
+            session.rollback()
+            already_claimed = session.scalar(
+                select(SATUSEHATTransmission).where(
+                    SATUSEHATTransmission.outbox_id == outbox_id
+                )
+            )
+            if already_claimed is not None:
+                raise SATUSEHATWorkflowError(
+                    "Transmisi sudah diklaim oleh proses lain; pengiriman ganda diblokir."
+                ) from exc
+            raise
+        session.refresh(transmission)
 
     try:
         if outbox.resource_type == "Encounter":
