@@ -118,34 +118,57 @@ def validate_fhir_resource(resource: dict[str, Any]) -> None:
 
 
 def validate_sandbox_resource(resource: dict[str, Any]) -> None:
-    """Fail-closed guard against the demo placeholders used by the mock builders."""
+    """Fail-closed subset validator for a mapped, create-ready FHIR resource; not a full profile validator."""
     import json
-    validate_fhir_resource(resource)
     serialized = json.dumps(resource, ensure_ascii=False, sort_keys=True).casefold()
     forbidden_markers = ("example.invalid", "demo-", "mock-only-notice")
-    found = [marker for marker in forbidden_markers if marker in serialized]
-    if found:
-        raise ValueError("Payload masih memuat placeholder demo/mock; tidak dapat dipakai dalam preflight sandbox.")
+    if any(marker in serialized for marker in forbidden_markers):
+        raise ValueError("Payload masih memuat placeholder demo/mock; tidak dapat dikirim ke sandbox.")
+
+    # The server assigns IDs on FHIR create. Supply a temporary ID only to reuse the older
+    # shape checker, and never add it back to the outbound payload.
+    probe = dict(resource)
+    if not probe.get("id"):
+        probe["id"] = "local-validation-only"
+    validate_fhir_resource(probe)
     resource_type = resource.get("resourceType")
+    if resource.get("id"):
+        raise ValueError("FHIR create payload tidak boleh memakai id lokal; biarkan server sandbox menetapkan ID.")
+
+    def _ref(element: Any, prefix: str, label: str) -> None:
+        reference = ((element or {}).get("reference") or "")
+        if not isinstance(reference, str) or not reference.startswith(prefix) or len(reference) <= len(prefix):
+            raise ValueError(f"{label} harus menunjuk ID resource yang sudah dipetakan.")
+
     if resource_type == "Condition":
-        required_references = {
-            "subject": "Patient/",
-            "encounter": "Encounter/",
-            "recorder": "Practitioner/",
-        }
-        for element, prefix in required_references.items():
-            reference = ((resource.get(element) or {}).get("reference") or "")
-            if not reference.startswith(prefix) or len(reference) <= len(prefix):
-                raise ValueError(f"Condition.{element} harus menunjuk resource SATUSEHAT yang sudah dipetakan.")
+        coding = (((resource.get("code") or {}).get("coding") or [{}])[0])
+        identifier = ((resource.get("identifier") or [{}])[0])
+        if not coding.get("code") or not coding.get("display") or coding.get("system") != FHIR_ICD10_SYSTEM:
+            raise ValueError("Condition memerlukan coding ICD-10 2010 yang lengkap.")
+        if identifier.get("use") != "official" or not str(identifier.get("system") or "").startswith("http://sys-ids.kemkes.go.id/condition/") or not identifier.get("value"):
+            raise ValueError("Condition.identifier harus memakai sistem ID lokal dengan Organization IHS.")
+        if not resource.get("clinicalStatus") or not resource.get("verificationStatus") or not resource.get("category"):
+            raise ValueError("Condition memerlukan status klinis, status verifikasi, dan kategori.")
+        _ref(resource.get("subject"), "Patient/", "Condition.subject")
+        _ref(resource.get("encounter"), "Encounter/", "Condition.encounter")
+        _ref(resource.get("recorder"), "Practitioner/", "Condition.recorder")
+        if not resource.get("recordedDate"):
+            raise ValueError("Condition.recordedDate wajib tersedia.")
     elif resource_type == "Composition":
-        required_references = {
-            "subject": "Patient/",
-            "encounter": "Encounter/",
-        }
-        for element, prefix in required_references.items():
-            reference = ((resource.get(element) or {}).get("reference") or "")
-            if not reference.startswith(prefix) or len(reference) <= len(prefix):
-                raise ValueError(f"Composition.{element} harus menunjuk resource SATUSEHAT yang sudah dipetakan.")
-        authors = resource.get("author") or []
-        if not authors or not any(str((a.get("reference") or "")).startswith("Practitioner/") for a in authors):
-            raise ValueError("Composition.author harus menunjuk Practitioner yang sudah dipetakan.")
+        identifier = ((resource.get("identifier") or [{}])[0])
+        type_coding = (((resource.get("type") or {}).get("coding") or [{}])[0])
+        category_coding = (((resource.get("category") or [{}])[0].get("coding") or [{}])[0])
+        if identifier.get("use") != "official" or not str(identifier.get("system") or "").startswith("http://sys-ids.kemkes.go.id/composition/") or not identifier.get("value"):
+            raise ValueError("Composition.identifier harus memakai sistem ID lokal dengan Organization IHS.")
+        if type_coding.get("system") != "http://loinc.org" or type_coding.get("code") != "88645-7":
+            raise ValueError("Composition.type belum menggunakan kode LOINC resume medis rawat jalan.")
+        if category_coding.get("system") != "http://loinc.org" or category_coding.get("code") != "LP173421-1":
+            raise ValueError("Composition.category belum memakai kategori LOINC Report.")
+        _ref(resource.get("subject"), "Patient/", "Composition.subject")
+        _ref(resource.get("encounter"), "Encounter/", "Composition.encounter")
+        _ref((resource.get("author") or [{}])[0], "Practitioner/", "Composition.author")
+        if not resource.get("date") or not resource.get("section"):
+            raise ValueError("Composition memerlukan date dan section.")
+        for section in resource.get("section") or []:
+            if not section.get("title") or not (((section.get("code") or {}).get("coding") or [{}])[0].get("code")):
+                raise ValueError("Setiap Composition.section harus memiliki title dan coding.")
