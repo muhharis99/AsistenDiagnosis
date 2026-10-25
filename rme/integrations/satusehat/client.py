@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 
 import requests
 
-from rme.integrations.satusehat.mapping import SANDBOX_BASE_URL, SANDBOX_TOKEN_URL
+from rme.integrations.satusehat.mapping import SANDBOX_BASE_URL, SANDBOX_TOKEN_URL, is_safe_external_id
 
 
 ALLOWED_RESOURCE_TYPES = {
@@ -260,6 +260,34 @@ class SATUSEHATClient:
                 ) from exc
 
         return ApiResponse(status, payload, response_headers)
+
+    def search_resource_by_identifier(
+        self, resource_type: str, identifier_system: str, identifier_value: str
+    ) -> ApiResponse:
+        """Read-only lookup used to reconcile an uncertain POST without repeating it."""
+        if resource_type not in {"Condition", "Composition", "Observation", "ClinicalImpression"}:
+            raise SATUSEHATClientError("Resource type belum diizinkan untuk rekonsiliasi identifier.")
+        system = (identifier_system or "").strip()
+        value = (identifier_value or "").strip()
+        if (
+            not system.startswith("http://sys-ids.kemkes.go.id/")
+            or "|" in system
+            or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.-]{0,159}", value)
+        ):
+            raise SATUSEHATClientError("Identifier rekonsiliasi tidak valid.")
+        return self.request(
+            "GET",
+            resource_type,
+            params={"identifier": f"{system}|{value}"},
+        )
+
+    def get_resource(self, resource_type: str, external_id: str) -> ApiResponse:
+        """Read one known, mapped resource; currently used only for Encounter reconciliation."""
+        if resource_type != "Encounter":
+            raise SATUSEHATClientError("GET langsung hanya diizinkan untuk Encounter pada fase ini.")
+        if not is_safe_external_id(external_id):
+            raise SATUSEHATClientError("ID resource untuk rekonsiliasi tidak aman atau masih placeholder.")
+        return self.request("GET", f"{resource_type}/{external_id}")
 
     def search_patient_by_nik(self, nik: str) -> ApiResponse:
         """Search Patient through MPI using the documented NIK identifier query."""
