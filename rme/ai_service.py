@@ -202,23 +202,36 @@ def request_symptom_suggestion(
             "red_flags": red_flags,
         }
 
-    # Peringatan kelompok khusus juga memblokir model sebelum pemuatan/inferensi.
+    # Peringatan kelompok khusus memblokir model. Setelah ditandai pada kunjungan, blokir dipertahankan.
     actual_age = _age_on(patient.birth_date)
     blocked_groups = list(dict.fromkeys(str(x) for x in (special_groups or []) if str(x).strip()))
     if actual_age < 18:
         blocked_groups.append("Bayi/anak kecil")
     if actual_age >= 65:
         blocked_groups.append("Lansia")
+    prior_group_logs = session.scalars(
+        select(AuditLog).where(
+            AuditLog.action == "ai.special_population_blocked",
+            AuditLog.entity_type == "Visit",
+            AuditLog.entity_id == str(visit.id),
+        ).order_by(AuditLog.id.asc())
+    ).all()
+    for log in prior_group_logs:
+        try:
+            blocked_groups.extend(str(x) for x in json.loads(log.details_json).get("groups", []))
+        except (json.JSONDecodeError, TypeError):
+            continue
+    blocked_groups = sorted(set(blocked_groups))
     if blocked_groups:
         append_audit(
             session, user, "ai.special_population_blocked", "Visit", visit.id,
-            {"groups": sorted(set(blocked_groups)), "model_called": False},
+            {"groups": blocked_groups, "model_called": False},
         )
         session.commit()
         return {
             "status": "special_population_blocked",
-            "groups": sorted(set(blocked_groups)),
-            "message": "Model tidak divalidasi untuk kelompok ini. Hasil ditahan; konsultasikan langsung ke dokter/fasilitas kesehatan.",
+            "groups": blocked_groups,
+            "message": "Model tidak divalidasi untuk kelompok ini. Hasil ditahan; konsultasikan langsung ke dokter/fasilitas kesehatan. Blokir berlaku untuk kunjungan ini.",
         }
 
     if not ai_consent_granted(session, patient.id):
