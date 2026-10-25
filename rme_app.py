@@ -298,7 +298,7 @@ def resumes(factory,user,cipher):
             if addenda:
                 st.markdown("### Riwayat addendum")
                 for item in addenda:
-                    st.markdown(f"**{_wib(item.created_at)}** — {item.content}  \\nAlasan: {item.reason}")
+                    st.markdown(f"**{wib(item.created_at)}** — {item.content}  \\nAlasan: {item.reason}")
         else:
             st.info("Resume masih draf. Buka menu Pemeriksaan untuk melanjutkan.")
     except Exception as e:
