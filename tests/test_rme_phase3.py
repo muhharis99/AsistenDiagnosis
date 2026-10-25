@@ -16,7 +16,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 from rme.db import build_engine, initialize_database, session_factory
 from rme.models import Diagnosis, OutboxSync, Patient, ResumeMedical, User, Visit
 from rme.schemas import PatientCreate, ResumeInput, VisitCreate
-from rme.security import SensitiveFieldCipher
+from rme.security import SensitiveFieldCipher, require_permission
 from rme.services import create_patient, create_visit, ensure_reference_data, finalize_resume, save_resume_draft, transition_visit
 from rme.bootstrap import seed_users
 from rme.diagnosis_service import DiagnosisWorkflowError, create_doctor_diagnosis, verify_diagnosis_code
@@ -180,3 +180,12 @@ def test_mock_outbox_idempotency_prevents_duplicate_payloads(context):
         assert len(first) == 2 and len(second) == 2
         assert len(actual) == 2
         assert len({row.idempotency_key for row in actual}) == 2
+
+
+def test_system_admin_has_no_default_clinical_or_satusehat_payload_access(context):
+    _, _, users = context
+    for permission in ("diagnosis:read", "satusehat:read", "satusehat:manage"):
+        with pytest.raises(PermissionError):
+            require_permission(users["admin_sistem_demo"], permission)
+    # System administration remains available without clinical-data privileges.
+    require_permission(users["admin_sistem_demo"], "registry:manage")

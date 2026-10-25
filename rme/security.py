@@ -17,7 +17,7 @@ PERMISSIONS = {
  "dokter": {"dashboard:read","patient:read","patient:nik:reveal","visit:read","visit:start","visit:finish","anamnesis:read","anamnesis:write","vitals:read","vitals:write","resume:read","resume:write","resume:finalize","resume:addendum","ai:review","diagnosis:create","diagnosis:read"},
  "perekam_medis": {"dashboard:read","patient:read","patient:nik:reveal","visit:read","resume:read","icd:verify","audit:read","diagnosis:read","satusehat:read","satusehat:manage"},
  "pimpinan": {"dashboard:read","audit:read","user:read","registry:read"},
- "admin_sistem": {"dashboard:read","user:read","user:manage","registry:read","registry:manage","audit:read","diagnosis:read","satusehat:read","satusehat:manage"},
+ "admin_sistem": {"dashboard:read","user:read","user:manage","registry:read","registry:manage","audit:read"},
 }
 class AuthorizationError(PermissionError): pass
 class AuthenticationError(ValueError): pass
