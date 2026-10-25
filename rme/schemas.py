@@ -1,5 +1,6 @@
 """Skema Pydantic v2 untuk memvalidasi masukan RME."""
 from datetime import date
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 class PatientCreate(BaseModel):
@@ -63,3 +64,30 @@ class ResumeInput(BaseModel):
 class AddendumInput(BaseModel):
     content: str = Field(min_length=3, max_length=10000)
     reason: str = Field(min_length=5, max_length=2000)
+
+
+class AISuggestionReviewInput(BaseModel):
+    """Validasi keputusan dokter; aksi ini tidak membuat diagnosis final."""
+    action: Literal["accepted_as_working_hypothesis", "modified", "ignored"]
+    selected_candidate: str | None = Field(default=None, max_length=180)
+    modified_candidate: str | None = Field(default=None, min_length=3, max_length=1000)
+    reason: str | None = Field(default=None, max_length=2000)
+
+    @model_validator(mode="after")
+    def validate_action_details(self):
+        if self.action == "accepted_as_working_hypothesis":
+            if not (self.selected_candidate or "").strip():
+                raise ValueError("Pilih satu kandidat model untuk dicatat sebagai hipotesis kerja.")
+            if self.modified_candidate:
+                raise ValueError("Kandidat yang diubah hanya boleh diisi untuk aksi modified.")
+        elif self.action == "modified":
+            if not (self.modified_candidate or "").strip():
+                raise ValueError("Isi saran/kandidat yang sudah diperbaiki dokter.")
+            if len((self.reason or "").strip()) < 5:
+                raise ValueError("Alasan perubahan minimal 5 karakter.")
+        elif self.action == "ignored":
+            if len((self.reason or "").strip()) < 5:
+                raise ValueError("Alasan mengabaikan saran minimal 5 karakter.")
+            if self.selected_candidate or self.modified_candidate:
+                raise ValueError("Aksi ignored tidak boleh memilih atau mengubah kandidat.")
+        return self

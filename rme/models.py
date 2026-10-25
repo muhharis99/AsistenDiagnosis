@@ -205,3 +205,50 @@ class ModelRegistry(Base):
 
 Index("ix_visit_status_arrived", Visit.status, Visit.arrived_at)
 Index("ix_audit_entity", AuditLog.entity_type, AuditLog.entity_id)
+
+
+class AISuggestion(Base):
+    """Saran model yang terpisah dari diagnosis resmi; semua contoh wajib fiktif."""
+    __tablename__ = "ai_suggestions"
+    __table_args__ = (
+        CheckConstraint("is_demo = true", name="ck_ai_suggestion_demo_only"),
+        CheckConstraint("status IN ('generated','insufficient_information')", name="ck_ai_suggestion_status"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    visit_id: Mapped[int] = mapped_column(ForeignKey("visits.id", ondelete="RESTRICT"), nullable=False, index=True)
+    requested_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    model_version: Mapped[str] = mapped_column(String(160), nullable=False)
+    model_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    training_data_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    code_version: Mapped[str] = mapped_column(String(120), nullable=False)
+    input_symptom_ids_json: Mapped[str] = mapped_column(Text, nullable=False)
+    output_candidates_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    explanations_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    followup_questions_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="generated")
+    confidence_threshold: Mapped[float] = mapped_column(Float, nullable=False)
+    max_probability: Mapped[float] = mapped_column(Float, nullable=False)
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+class AISuggestionReview(Base):
+    """Keputusan dokter atas saran AI; bukan diagnosis final atau kode ICD."""
+    __tablename__ = "ai_suggestion_reviews"
+    __table_args__ = (
+        CheckConstraint("is_demo = true", name="ck_ai_suggestion_review_demo_only"),
+        CheckConstraint("action IN ('accepted_as_working_hypothesis','modified','ignored')", name="ck_ai_suggestion_review_action"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    suggestion_id: Mapped[int] = mapped_column(ForeignKey("ai_suggestions.id", ondelete="RESTRICT"), nullable=False, index=True)
+    reviewer_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    action: Mapped[str] = mapped_column(String(40), nullable=False)
+    selected_candidate: Mapped[str | None] = mapped_column(String(180))
+    modified_candidate: Mapped[str | None] = mapped_column(Text)
+    reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+Index("ix_ai_suggestion_visit_created", AISuggestion.visit_id, AISuggestion.created_at)
+Index("ix_ai_suggestion_review_suggestion_created", AISuggestionReview.suggestion_id, AISuggestionReview.created_at)
