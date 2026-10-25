@@ -13,8 +13,9 @@ from rme.integrations.satusehat.live_service import (
     list_transmissions,
     search_demo_patient_mpi,
     transmit_outbox_item_sandbox,
+    queue_visit_phase6_resources,
 )
-from rme.models import OutboxSync, Patient, SATUSEHATTransmission
+from rme.models import OutboxSync, Patient, SATUSEHATTransmission, Visit
 from rme.security import require_permission
 
 
@@ -37,6 +38,33 @@ def render_phase5_sandbox_tools(factory, user, cipher) -> None:
     else:
         st.warning("Permintaan berikut benar-benar akan mencapai SATUSEHAT STAGING. Gunakan data uji sintetis saja; jangan gunakan nama/NIK atau catatan dari pasien nyata.")
     st.caption("Klien dibatasi ke endpoint staging resmi, tidak mengikuti redirect, menggunakan TLS verification, dan tidak menampilkan atau mencatat client secret, access token, NIK, atau body respons mentah.")
+
+    with st.expander("Fase 6 — Siapkan resource RME untuk outbox (tanpa jaringan)", expanded=True):
+        with factory() as session:
+            visits = session.scalars(
+                select(Visit).where(Visit.is_demo.is_(True), Visit.status == "finished")
+                .order_by(Visit.finished_at.desc(), Visit.id.desc()).limit(100)
+            ).all()
+            visit_options = {f"Kunjungan #{v.id} · {v.visit_number} · selesai": v.id for v in visits}
+        if not visit_options:
+            st.info("Belum ada kunjungan demo selesai.")
+        else:
+            with st.form("phase6_queue_resource_set"):
+                chosen_visit = st.selectbox("Kunjungan untuk resource FHIR", list(visit_options))
+                queue_resources = st.form_submit_button("Siapkan Encounter update, Observation, ClinicalImpression, Condition, dan Composition (mock)")
+            if queue_resources:
+                try:
+                    with factory() as session:
+                        rows = queue_visit_phase6_resources(session, user, visit_options[chosen_visit])
+                    st.success(f"{len(rows)} resource diperiksa dan tersedia pada outbox lokal. Belum ada request jaringan.")
+                    st.dataframe(pd.DataFrame([{
+                        "Outbox": row.id, "Resource": row.resource_type,
+                        "Status antrean": row.status, "Kunci idempotensi": row.idempotency_key,
+                    } for row in rows]), use_container_width=True, hide_index=True)
+                    st.caption("Urutan pengiriman yang disarankan: Condition → Observation → ClinicalImpression → Encounter update → Composition.")
+                    st.caption("Encounter pada fase ini adalah PUT untuk Encounter sandbox yang ID-nya sudah dipetakan, bukan pembuatan Encounter baru.")
+                except Exception as exc:
+                    st.error(f"Outbox Fase 6 belum dibuat: {exc}")
 
     with st.expander("Pencarian ID Patient dari MPI sandbox", expanded=True):
         with factory() as session:
@@ -82,9 +110,11 @@ def render_phase5_sandbox_tools(factory, user, cipher) -> None:
             queued = session.scalars(
                 select(OutboxSync).where(
                     OutboxSync.is_demo.is_(True), OutboxSync.status == "queued",
-                    OutboxSync.resource_type.in_(["Condition", "Composition"]),
+                    OutboxSync.resource_type.in_(["Condition", "Observation", "ClinicalImpression", "Encounter", "Composition"]),
                 ).order_by(OutboxSync.created_at, OutboxSync.id).limit(100)
             ).all()
+            rank = {"Condition": 0, "Observation": 1, "ClinicalImpression": 2, "Encounter": 3, "Composition": 4}
+            queued.sort(key=lambda row: (rank.get(row.resource_type, 99), row.created_at, row.id))
             transmissions = session.scalars(select(SATUSEHATTransmission).where(SATUSEHATTransmission.is_demo.is_(True))).all()
             terminal_ids = {row.outbox_id for row in transmissions if row.status in {"succeeded", "sending", "uncertain", "blocked"}}
             queued_options = {
