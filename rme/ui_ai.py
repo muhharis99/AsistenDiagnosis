@@ -151,3 +151,61 @@ def render_ai_panel(factory, user: User, visit: Visit, patient: Patient, age: in
         st.write("Versi kode:",suggestion.code_version)
         st.code(f"Model SHA-256: {suggestion.model_artifact_sha256}\nData latih SHA-256: {suggestion.training_data_sha256}")
         st.write("Dibuat UTC:",suggestion.created_at.isoformat())
+
+
+def render_ai_evaluation() -> None:
+    """Tampilkan status dataset/model dan artefak evaluasi yang sudah disimpan."""
+    from config import OUTPUT_DIR, SCREENING_METADATA_PATH
+    st.header("Evaluasi Model Asisten Diagnosis")
+    symptom_meta=read_symptom_metadata()
+    if not symptom_meta:
+        st.info("Metadata model gejala belum tersedia. Jalankan python train_symptom.py.")
+    else:
+        is_demo=bool(symptom_meta.get("is_demo",symptom_meta.get("dataset",{}).get("is_demo",True)))
+        if is_demo:
+            st.error("DATA DEMO SINTETIS: metrik berikut hanya memeriksa pipeline software, bukan performa klinis.")
+        st.subheader("Modul A — diagnosis berbasis gejala")
+        st.write("Model:",symptom_meta.get("model","Belum diketahui"))
+        st.write("Sumber:",symptom_meta.get("dataset",{}).get("source","Tidak tercatat"))
+        st.write("Waktu training UTC:",symptom_meta.get("trained_at_utc","Tidak tercatat"))
+        st.json(symptom_meta.get("selected_test_metrics",{}))
+        st.caption("Ambang penahanan dugaan statistik, bukan ambang klinis: "+str(symptom_meta.get("confidence_threshold","Tidak tersedia")))
+        for filename,caption in [
+            ("symptom_confusion_matrix.png","Confusion matrix"),
+            ("symptom_calibration_curve.png","Kurva reliabilitas"),
+            ("symptom_permutation_importance.png","Permutation importance global"),
+            ("symptom_robustness_tests.csv","Uji ketahanan"),
+        ]:
+            path=OUTPUT_DIR/filename
+            if not path.exists(): continue
+            st.markdown("**"+caption+"**")
+            if path.suffix.lower()==".png":
+                st.image(str(path),caption=caption,use_container_width=True)
+            else:
+                import pandas as pd
+                st.dataframe(pd.read_csv(path),use_container_width=True,hide_index=True)
+    st.divider()
+    st.subheader("Modul B — skrining diabetes")
+    try:
+        meta=json.loads(Path(SCREENING_METADATA_PATH).read_text(encoding="utf-8"))
+    except (OSError,json.JSONDecodeError):
+        meta={}
+    if not meta:
+        st.info("Metadata skrining belum tersedia. Jalankan python train_screening.py.")
+    else:
+        if bool(meta.get("is_demo",meta.get("data",{}).get("is_demo",True))):
+            st.error("DATA DEMO SINTETIS: metrik tidak menunjukkan kemampuan mendeteksi diabetes pada pasien nyata.")
+        st.write("Model:",meta.get("model","Belum diketahui"))
+        st.write("Waktu training UTC:",meta.get("trained_at_utc","Tidak tercatat"))
+        st.json(meta.get("test_metrics",{}))
+        for filename,caption in [
+            ("screening_confusion_matrix.png","Confusion matrix"),
+            ("screening_roc_curve.png","Kurva ROC"),
+            ("screening_calibration_curve.png","Kurva reliabilitas"),
+            ("screening_permutation_importance.png","Permutation importance global"),
+        ]:
+            path=OUTPUT_DIR/filename
+            if path.exists():
+                st.markdown("**"+caption+"**")
+                st.image(str(path),caption=caption,use_container_width=True)
+    st.warning("Model card dan metrik adalah ringkasan teknis. Validasi klinis lokal, kalibrasi eksternal dan review tenaga medis tetap diperlukan.")
