@@ -99,3 +99,37 @@ def test_failed_transmission_claim_is_atomic_and_only_one_retry_can_win(context)
         ))
         assert row.status == "sending"
         assert row.attempt_count == 1
+
+
+
+def test_failed_transmission_is_claimed_then_retry_increments_attempt_count(context):
+    factory, _, users = context
+    _, visit_id, outbox_ids = prepare_outbox(context)
+    map_visit(context, visit_id)
+
+    failed_transport = FakeTransport(post_status=422)
+    failed_client = SATUSEHATClient(GOOD_ENV, transport=failed_transport)
+    with factory() as session:
+        first = transmit_outbox_item_sandbox(
+            session, users["rekam_medis_demo"], outbox_ids["Condition"],
+            client=failed_client, confirmed_demo_only=True,
+        )
+        assert first.status == "failed"
+        assert first.attempt_count == 1
+
+    successful_transport = FakeTransport()
+    successful_client = SATUSEHATClient(GOOD_ENV, transport=successful_transport)
+    with factory() as session:
+        second = transmit_outbox_item_sandbox(
+            session, users["rekam_medis_demo"], outbox_ids["Condition"],
+            client=successful_client, confirmed_demo_only=True,
+        )
+        assert second.status == "succeeded"
+        assert second.attempt_count == 2
+        assert second.external_resource_id
+
+    remote_posts = [
+        call for call in failed_transport.calls + successful_transport.calls
+        if call[0] == "POST" and call[1].startswith(GOOD_ENV["SATUSEHAT_BASE_URL"])
+    ]
+    assert len(remote_posts) == 2
