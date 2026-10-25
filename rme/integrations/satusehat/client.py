@@ -15,7 +15,7 @@ from rme.integrations.satusehat.mapping import SANDBOX_BASE_URL, SANDBOX_TOKEN_U
 
 ALLOWED_RESOURCE_TYPES = {
     "Patient", "Practitioner", "Organization", "Location", "Encounter",
-    "Condition", "Composition",
+    "Condition", "Composition", "Observation", "ClinicalImpression",
 }
 NIK_PATTERN = re.compile(r"^[0-9]{16}$")
 RESOURCE_PATH_PATTERN = re.compile(r"^[A-Za-z]+(?:/[A-Za-z0-9.-]+)?$")
@@ -172,7 +172,7 @@ class SATUSEHATClient:
     ) -> ApiResponse:
         verb = method.strip().upper()
         path = (resource_path or "").strip().strip("/")
-        if verb not in {"GET", "POST"}:
+        if verb not in {"GET", "POST", "PUT"}:
             raise SATUSEHATClientError("Metode HTTP tidak diizinkan pada fase ini.")
         if not RESOURCE_PATH_PATTERN.fullmatch(path):
             raise SATUSEHATClientError("Resource path tidak valid.")
@@ -183,6 +183,12 @@ class SATUSEHATClient:
             raise SATUSEHATClientError("ID resource tidak valid.")
         if verb == "POST" and (len(parts) != 1 or json_body is None):
             raise SATUSEHATClientError("POST hanya boleh ke endpoint koleksi resource dengan body FHIR.")
+        if verb == "PUT" and (len(parts) != 2 or json_body is None):
+            raise SATUSEHATClientError("PUT hanya boleh ke endpoint resource dengan ID dan body FHIR.")
+        if verb == "PUT" and (
+            json_body.get("resourceType") != parts[0] or json_body.get("id") != parts[1]
+        ):
+            raise SATUSEHATClientError("Tipe/ID resource PUT harus sama dengan path yang dituju.")
         if verb == "GET" and json_body is not None:
             raise SATUSEHATClientError("GET tidak menerima body.")
 
@@ -198,7 +204,7 @@ class SATUSEHATClient:
                 headers={
                     "Authorization": f"Bearer {token}",
                     "Accept": "application/fhir+json, application/json",
-                    **({"Content-Type": "application/json"} if verb == "POST" else {}),
+                    **({"Content-Type": "application/json"} if verb in {"POST", "PUT"} else {}),
                 },
                 timeout=(3.05, 20),
                 verify=True,
@@ -238,8 +244,23 @@ class SATUSEHATClient:
         )
 
     def post_resource(self, resource_type: str, payload: dict[str, Any]) -> ApiResponse:
-        if resource_type not in {"Condition", "Composition"}:
-            raise SATUSEHATClientError("Fase ini hanya mengirim Condition dan Composition.")
+        if resource_type not in {"Condition", "Composition", "Observation", "ClinicalImpression"}:
+            raise SATUSEHATClientError("Jenis resource POST belum diizinkan pada versi klien ini.")
         if payload.get("resourceType") != resource_type:
             raise SATUSEHATClientError("Tipe resource tidak cocok dengan antrean.")
         return self.request("POST", resource_type, json_body=payload)
+
+
+    def update_resource(
+        self, resource_type: str, external_id: str, payload: dict[str, Any]
+    ) -> ApiResponse:
+        """Update one mapped sandbox resource using its server-assigned ID."""
+        if resource_type != "Encounter":
+            raise SATUSEHATClientError("Fase ini hanya mengizinkan PUT pada Encounter yang sudah dipetakan.")
+        if not re.fullmatch(r"[A-Za-z0-9.-]{1,128}", external_id or "") or any(
+            marker in external_id.casefold() for marker in ("demo", "example", ".invalid")
+        ):
+            raise SATUSEHATClientError("ID Encounter eksternal kosong atau masih berupa placeholder.")
+        if payload.get("resourceType") != resource_type or payload.get("id") != external_id:
+            raise SATUSEHATClientError("Payload Encounter harus memakai ID yang sudah dipetakan.")
+        return self.request("PUT", f"{resource_type}/{external_id}", json_body=payload)

@@ -327,7 +327,7 @@ def main():
     st.markdown("<style>.stApp{background:#f6f8fb} [data-testid='stSidebar']{background:#eef2f7} button{min-height:40px}</style>",unsafe_allow_html=True)
     try: factory,cipher,cfg=runtime()
     except Exception as e: st.error(f"Runtime belum siap: {e}"); st.code("python scripts/init_demo.py\nstreamlit run rme_app.py"); st.stop()
-    st.title("RME Rawat Jalan — Prototipe Fase 5")
+    st.title("RME Rawat Jalan — Prototipe Fase 6")
     if not st.session_state.get("user_id"): login(factory); return
     user=current_user(factory,cfg)
     if not user: login(factory); return
