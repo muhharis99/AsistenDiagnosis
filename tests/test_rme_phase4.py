@@ -176,7 +176,7 @@ def test_preflight_blocks_when_mappings_are_missing_and_never_enables_network(co
         assert result["ready"] is False
         assert result["network_calls_enabled"] is False
         assert any(not item["passed"] for item in result["checks"])
-        assert "tidak ada" in result["notice"].lower()
+        assert "belum ada" in result["notice"].lower()
 
 
 def test_preflight_passes_only_when_all_configuration_clinical_and_mapping_checks_pass(context):
