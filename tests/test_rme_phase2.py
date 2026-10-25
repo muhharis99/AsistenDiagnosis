@@ -97,19 +97,16 @@ def test_red_flag_blocks_before_consent_or_model(context,tmp_path):
     patient=make_patient(context,ai_consent=False)
     visit_id=make_active_visit(context,patient.id)
     # File sengaja tidak ada: red flag tetap harus diproses sebelum model dimuat.
-    result=request_symptom_suggestion(
-        _session(factory),users["dokter_demo"],visit_id,["chest_pain"],
-        explicit_red_flags=["chest_pain"],model_path=tmp_path/"missing.joblib",metadata_path=tmp_path/"missing.json"
-    )
+    with factory() as session:
+        result=request_symptom_suggestion(
+            session,users["dokter_demo"],visit_id,["chest_pain"],
+            explicit_red_flags=["chest_pain"],model_path=tmp_path/"missing.joblib",metadata_path=tmp_path/"missing.json"
+        )
     assert result["status"]=="red_flag_blocked"
     with factory() as session:
         assert session.scalar(select(AISuggestion.id).where(AISuggestion.visit_id==visit_id)) is None
         assert session.scalar(select(AuditLog.id).where(AuditLog.action=="ai.red_flag_blocked")) is not None
 
-
-def _session(factory):
-    """Pembuka sesi untuk pemanggilan yang tidak menguji transaksi berulang."""
-    return factory()
 
 
 def test_ai_consent_required_before_model_loading(context,tmp_path):
