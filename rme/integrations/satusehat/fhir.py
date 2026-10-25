@@ -115,3 +115,37 @@ def validate_fhir_resource(resource: dict[str, Any]) -> None:
             raise ValueError("Composition memerlukan subject dan encounter.")
     else:
         raise ValueError(f"Resource FHIR tidak didukung pada fase ini: {resource_type!r}.")
+
+
+def validate_sandbox_resource(resource: dict[str, Any]) -> None:
+    """Fail-closed guard against the demo placeholders used by the mock builders."""
+    import json
+    validate_fhir_resource(resource)
+    serialized = json.dumps(resource, ensure_ascii=False, sort_keys=True).casefold()
+    forbidden_markers = ("example.invalid", "demo-", "mock-only-notice")
+    found = [marker for marker in forbidden_markers if marker in serialized]
+    if found:
+        raise ValueError("Payload masih memuat placeholder demo/mock; tidak dapat dipakai dalam preflight sandbox.")
+    resource_type = resource.get("resourceType")
+    if resource_type == "Condition":
+        required_references = {
+            "subject": "Patient/",
+            "encounter": "Encounter/",
+            "recorder": "Practitioner/",
+        }
+        for element, prefix in required_references.items():
+            reference = ((resource.get(element) or {}).get("reference") or "")
+            if not reference.startswith(prefix) or len(reference) <= len(prefix):
+                raise ValueError(f"Condition.{element} harus menunjuk resource SATUSEHAT yang sudah dipetakan.")
+    elif resource_type == "Composition":
+        required_references = {
+            "subject": "Patient/",
+            "encounter": "Encounter/",
+        }
+        for element, prefix in required_references.items():
+            reference = ((resource.get(element) or {}).get("reference") or "")
+            if not reference.startswith(prefix) or len(reference) <= len(prefix):
+                raise ValueError(f"Composition.{element} harus menunjuk resource SATUSEHAT yang sudah dipetakan.")
+        authors = resource.get("author") or []
+        if not authors or not any(str((a.get("reference") or "")).startswith("Practitioner/") for a in authors):
+            raise ValueError("Composition.author harus menunjuk Practitioner yang sudah dipetakan.")

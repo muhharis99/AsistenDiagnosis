@@ -178,3 +178,12 @@ Dokumentasi rujukan yang diperiksa:
 - SATUSEHAT — Playbook Resume Medis Rawat Jalan: https://satusehat.kemkes.go.id/platform/docs/id/interoperability/rme-rawat-jalan/
 
 Keterbatasan: ini belum validator profil SATUSEHAT lengkap, belum menyelesaikan identitas IHS/MPI, mapping organization/practitioner/location, OAuth sandbox, OperationOutcome, atau transmisi nyata. Reference bertanda demo- serta URL domain .invalid sengaja menjadi placeholder. Jangan mengubah mock menjadi sandbox/production tanpa telaah playbook dan pengujian profil resmi terbaru.
+
+
+## 8. Fase 4 — Persiapan mapping dan sandbox SATUSEHAT
+
+Fase 4 menambahkan mapping ID sandbox yang diverifikasi secara terpisah untuk Patient, Practitioner, Organization, Location, dan Encounter; preflight lokal; daftar URL staging yang diizinkan; pemeriksaan TLS; serta guard yang menolak payload dengan placeholder demo. Perubahan mapping external ID membatalkan status verifikasi lama.
+
+Fase ini tidak melakukan OAuth, GET MPI/MNI, POST resource, maupun transmisi jaringan. Bahkan ketika preflight lengkap, pengiriman belum tersedia. Semua payload Fase 3 tetap payload mock, bukan payload untuk sandbox.
+
+Dokumentasi rinci: docs/FASE_4_SATUSEHAT_READINESS.md

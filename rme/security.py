@@ -15,9 +15,9 @@ PERMISSIONS = {
  "admin_pendaftaran": {"dashboard:read","patient:create","patient:read","patient:nik:reveal","consent:create","visit:create","visit:read","visit:update","user:read"},
  "perawat": {"dashboard:read","patient:read","visit:read","visit:start","anamnesis:read","anamnesis:write","vitals:read","vitals:write","resume:read"},
  "dokter": {"dashboard:read","patient:read","patient:nik:reveal","visit:read","visit:start","visit:finish","anamnesis:read","anamnesis:write","vitals:read","vitals:write","resume:read","resume:write","resume:finalize","resume:addendum","ai:review","diagnosis:create","diagnosis:read"},
- "perekam_medis": {"dashboard:read","patient:read","patient:nik:reveal","visit:read","resume:read","icd:verify","audit:read","diagnosis:read","satusehat:read","satusehat:manage"},
+ "perekam_medis": {"dashboard:read","patient:read","patient:nik:reveal","visit:read","resume:read","icd:verify","audit:read","diagnosis:read","satusehat:read","satusehat:manage","satusehat:mapping:read"},
  "pimpinan": {"dashboard:read","audit:read","user:read","registry:read"},
- "admin_sistem": {"dashboard:read","user:read","user:manage","registry:read","registry:manage","audit:read"},
+ "admin_sistem": {"dashboard:read","user:read","user:manage","registry:read","registry:manage","audit:read","satusehat:mapping:read","satusehat:mapping:manage"},
 }
 class AuthorizationError(PermissionError): pass
 class AuthenticationError(ValueError): pass

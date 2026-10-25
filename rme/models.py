@@ -307,3 +307,35 @@ class OutboxSync(Base):
 
 Index("ix_diagnosis_visit_status", Diagnosis.visit_id, Diagnosis.status)
 Index("ix_outbox_status_created", OutboxSync.status, OutboxSync.created_at)
+
+
+class SATUSEHATIdMapping(Base):
+    """Mapping ID lokal ke ID SATUSEHAT; memerlukan verifikasi manual dan dibatasi per environment."""
+    __tablename__ = "satusehat_id_mappings"
+    __table_args__ = (
+        UniqueConstraint("resource_type", "local_key", "environment", name="uq_satusehat_mapping_local_env"),
+        CheckConstraint(
+            "resource_type IN ('Patient','Practitioner','Organization','Location','Encounter')",
+            name="ck_satusehat_mapping_resource_type",
+        ),
+        CheckConstraint("environment IN ('sandbox')", name="ck_satusehat_mapping_environment"),
+        CheckConstraint("is_demo = true", name="ck_satusehat_mapping_demo_only"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    resource_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    local_key: Mapped[str] = mapped_column(String(180), nullable=False)
+    external_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    environment: Mapped[str] = mapped_column(String(20), nullable=False, default="sandbox")
+    source: Mapped[str] = mapped_column(String(500), nullable=False)
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    verification_note: Mapped[str | None] = mapped_column(Text)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    updated_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    verified_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+Index("ix_satusehat_mapping_type_verified", SATUSEHATIdMapping.resource_type, SATUSEHATIdMapping.verified)

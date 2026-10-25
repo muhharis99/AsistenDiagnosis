@@ -10,6 +10,7 @@ from rme.models import Patient, ResumeMedical, Visit
 from rme.security import require_permission
 from rme.diagnosis_service import DiagnosisWorkflowError, available_icd10_terms, create_doctor_diagnosis, list_visit_diagnoses, verify_diagnosis_code
 from rme.integrations.satusehat.service import MockIntegrationError, list_outbox, process_mock_outbox, queue_visit_for_mock
+from rme.ui_phase4 import render_phase4_satusehat_readiness
 
 
 def _has_permission(user, permission: str) -> bool:
@@ -89,8 +90,12 @@ def render_satusehat_panel(factory, user) -> None:
     st.header("Integrasi SATUSEHAT — Fase 3 / MOCK")
     st.warning("MODE MOCK SAJA. Tidak ada OAuth, HTTP, atau pengiriman data ke SATUSEHAT. ID Patient/Encounter/Practitioner pada payload merupakan placeholder demo, bukan nomor IHS.")
     st.caption("Prerekuisit antrean: kunjungan finished, resume final, consent pembukaan/pemanfaatan data aktif, diagnosis confirmed, dan kode ICD-10 diverifikasi Perekam Medis.")
+    render_phase4_satusehat_readiness(factory, user)
     if not _has_permission(user, "satusehat:read"):
-        st.error("Peran Anda tidak memiliki izin melihat antrean integrasi.")
+        if _has_permission(user, "satusehat:mapping:manage") or _has_permission(user, "satusehat:mapping:read"):
+            st.info("Peran ini hanya dapat mengelola/membaca mapping teknis; tidak diberi akses ke outbox atau payload klinis.")
+        else:
+            st.error("Peran Anda tidak memiliki izin melihat antrean integrasi.")
         return
     if _has_permission(user, "satusehat:manage"):
         with factory() as session:
