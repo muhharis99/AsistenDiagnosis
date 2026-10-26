@@ -7,6 +7,7 @@ import os
 import pytest
 from cryptography.fernet import Fernet
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from rme.bootstrap import seed_users
 from rme.db import build_engine, initialize_database, session_factory
@@ -28,7 +29,7 @@ def context():
         ensure_reference_data(session)
         seed_users(session)
     with factory() as session:
-        users = {u.username: u for u in session.scalars(select(User)).all()}
+        users = {u.username: u for u in session.scalars(select(User).options(joinedload(User.role))).all()}
     cipher = SensitiveFieldCipher(Fernet.generate_key().decode())
     yield factory, cipher, users
     engine.dispose()
