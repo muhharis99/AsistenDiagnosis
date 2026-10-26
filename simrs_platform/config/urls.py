@@ -20,4 +20,9 @@ urlpatterns = [
     path("api/mpi/", include("mpi.urls")),
     path("api/frontoffice/", include("frontoffice.urls")),
     path("api/cashier/", include("cashier.urls")),
+    path("api/clinical/", include("clinical.urls")),
+    path("api/orders/", include("orders.urls")),
+    path("api/pharmacy/", include("pharmacy.urls")),
+    path("api/diagnostics/", include("diagnostics.urls")),
+    path("api/adt/", include("adt.urls")),
 ]
