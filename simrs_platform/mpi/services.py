@@ -81,7 +81,7 @@ def create_patient(*, full_name: str, birth_date: date | None, administrative_se
     )
     record_audit_event(
         actor=actor, event_type="mpi.patient.created", subject_type="Patient",
-        subject_id=str(patient.id), metadata={"mrn": patient.mrn, "has_nik": bool(normalized_nik)},
+        subject_id=str(patient.id), metadata={"identity_created": True, "has_nik": bool(normalized_nik)},
     )
     return patient
 
