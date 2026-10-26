@@ -27,7 +27,7 @@ def create_registration(*, patient_id: str, unit_id: str, visit_date: date, acto
     counter = RegistrationSequence.objects.select_for_update().get(pk=counter.pk)
     counter.last_value += 1
     counter.save(update_fields=["last_value"])
-    number = "REG-{0}-{1}-{2:05d}".format(visit_date.strftime("%Y%m%d"), unit.code, counter.last_value)
+    number = f"REG-{visit_date:%Y%m%d}-{unit.code}-{counter.last_value:05d}"
     row = Registration.objects.create(registration_no=number, patient=patient, unit=unit,
                                       visit_date=visit_date, registered_by=actor)
     record_audit_event(actor=actor, event_type="frontoffice.registration.created",
@@ -48,7 +48,7 @@ def arrive_registration(*, registration_id: str, actor: Any) -> QueueTicket:
     counter = QueueCounter.objects.select_for_update().get(pk=counter.pk)
     counter.last_number += 1
     counter.save(update_fields=["last_number"])
-    code = "{0}-{1}-{2:03d}".format(row.unit.code, row.visit_date.strftime("%y%m%d"), counter.last_number)
+    code = f"{row.unit.code}-{row.visit_date:%y%m%d}-{counter.last_number:03d}"
     ticket = QueueTicket.objects.create(registration=row, unit=row.unit, queue_date=row.visit_date,
         number=counter.last_number, queue_code=code, created_by=actor)
     row.status = Registration.Status.ARRIVED
