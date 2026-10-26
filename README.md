@@ -214,3 +214,8 @@ Tes menggunakan fake transport, bukan koneksi nyata. Validator bukan validator l
 Fase 7F menambah tes regresi untuk verifikasi hash-chain audit: rantai kosong/utuh, perubahan detail event, perubahan hash, dan pemutusan tautan predecessor. Panduan operator ada di [docs/FASE_7F_INTEGRITAS_AUDIT.md](docs/FASE_7F_INTEGRITAS_AUDIT.md).
 
 Pemeriksaan ini menggunakan helper audit yang sudah ada, tidak mengubah skema database, tidak mengubah status transmisi, dan tidak mengirim ulang resource. Hash-chain lokal membantu mendeteksi inkonsistensi, tetapi bukan pengganti penyimpanan audit eksternal append-only. Semua tes memakai data demo sintetis; hasil CI bukan bukti penerimaan resource oleh SATUSEHAT atau kesiapan produksi.
+
+
+## Fase 7G — Kesiapan operasional sandbox
+
+Menu Integrasi SATUSEHAT kini memiliki pemeriksaan operasional lokal yang menyajikan hasil konfigurasi teredaksi, jumlah status outbox/transmisi demo, dan integritas audit. Pemeriksaan tidak memanggil jaringan, tidak mengubah status transaksi, dan menandai status `sending`/`uncertain` untuk tinjauan. Detail ada di [docs/FASE_7G_KESIAPAN_OPERASIONAL.md](docs/FASE_7G_KESIAPAN_OPERASIONAL.md). Status yang lolos tidak membuktikan OAuth/koneksi atau penerimaan resource oleh SATUSEHAT.
