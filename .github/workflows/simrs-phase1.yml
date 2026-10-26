@@ -1,16 +1,12 @@
-name: SIMRS Phase 1 checks
+name: SIMRS Platform checks
 
 on:
   push:
-    branches: [main, "feat/fase-1-foundation-20261026"]
-    paths:
-      - "simrs_platform/**"
-      - ".github/workflows/simrs-phase1.yml"
+    branches: [main, "feat/fase-1-foundation-20261026", "feat/fase-2-frontoffice-cashier-20261026"]
+    paths: ["simrs_platform/**", ".github/workflows/simrs-phase1.yml"]
   pull_request:
     branches: [main]
-    paths:
-      - "simrs_platform/**"
-      - ".github/workflows/simrs-phase1.yml"
+    paths: ["simrs_platform/**", ".github/workflows/simrs-phase1.yml"]
 
 permissions:
   contents: write
@@ -36,13 +32,15 @@ jobs:
           uv sync --all-groups
           uv run ruff check . --fix
           uv run ruff format .
-          uv run python manage.py makemigrations organization identity terminology mpi platform_core
+          uv run python manage.py makemigrations organization identity terminology mpi platform_core frontoffice cashier
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "build(simrs): lock dependencies and add Phase 1 migrations"
-            git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+            git commit -m "build(simrs): lock dependencies and add migrations"
+            BRANCH="$GITHUB_HEAD_REF"
+            if [ -z "$BRANCH" ]; then BRANCH="$GITHUB_REF_NAME"; fi
+            git push origin "HEAD:$BRANCH"
           fi
       - name: Django system checks
         run: uv run python manage.py check
@@ -53,4 +51,4 @@ jobs:
       - name: Lint
         run: uv run ruff check .
       - name: Compile
-        run: uv run python -m compileall -q config organization identity terminology mpi platform_core
+        run: uv run python -m compileall -q config organization identity terminology mpi platform_core frontoffice cashier
