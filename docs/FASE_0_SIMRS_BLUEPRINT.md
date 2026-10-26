@@ -17,7 +17,7 @@ Tujuan fase ini adalah menyepakati batas sistem, alur end-to-end, domain, NFR, k
 | Penjamin | Umum + BPJS, asuransi swasta berikutnya | Tidak membuat aturan tarif/INA-CBG/iDRG hard-coded |
 | Data lama | Ada atau mungkin ada data dari sistem lama | Migrasi hanya melalui mapping, profiling, rekonsiliasi dan persetujuan pemilik data |
 | Deployment | Private cloud/on-premise di Indonesia, pilihan final belum diputuskan | Wajib uji konektivitas, backup, pemulihan, keamanan jaringan, dan tanggung jawab operasional |
-| Stack aplikasi baru | Laravel API + React/TypeScript, PostgreSQL; Redis hanya jika kebutuhan antrean/cache terbukti | Stack yang umum dan mudah direkrut di Indonesia; gunakan modular monolith dulu untuk membatasi biaya operasional |
+| Stack aplikasi baru | Python 3.12+ dengan Django + Django REST Framework + drf-spectacular, PostgreSQL; Celery + Redis/RabbitMQ hanya bila kebutuhan worker terbukti; Django Templates + HTMX + Alpine.js + Tailwind sebagai default | Sesuai batasan wajib Python untuk seluruh aplikasi dan logika bisnis; modular monolith menjaga biaya operasional tetap proporsional |
 | Identitas/SSO | OIDC; Keycloak dapat dievaluasi | MFA untuk aksi sensitif, tidak menyimpan password plaintext |
 | Integrasi | Adapter terpisah untuk SATUSEHAT/BPJS/SISRUTE dan contract test dengan mock | Spesifikasi resmi selalu diverifikasi saat fase integrasi |
 | Waktu/NFR | WIB sebagai zona awal; target awal 99,9% ketersediaan, RPO 15 menit, RTO 1 jam | Ini target usulan, bukan hasil pengukuran atau komitmen SLA |
@@ -34,7 +34,7 @@ Jawab dengan singkat; nilai default ditampilkan supaya desain bisa maju tanpa me
 3. **Cakupan MVP dan go-live:** apakah prioritas pertama pendaftaran → RME rawat jalan → farmasi → kasir → klaim BPJS? **Default:** ya, klaim dimulai sebagai adapter/mock dan baru diaktifkan setelah kontrak resmi diuji.
 4. **Sistem lama/migrasi:** ada SIMRS/RME/database/berkas yang harus dimigrasikan, dan siapa pemilik/penanggung jawab data? **Default:** migrasi belum dilakukan; lakukan profiling sampel yang sudah dianonimkan.
 5. **Hosting dan pemulihan:** on-premise, private cloud, atau cloud Indonesia; apakah RS memiliki tim infrastruktur 24/7? **Default:** private cloud Indonesia, operasi dan backup wajib diuji.
-6. **Stack dan repositori:** apakah setuju membangun SIMRS operasional baru berbasis Laravel + React + PostgreSQL, sementara Python/Streamlit diagnosis tetap sebagai prototipe terpisah sampai ada keputusan integrasi? **Default:** setuju; hindari mengubah aplikasi diagnosis menjadi SIMRS operasional secara implisit.
+6. **Stack dan repositori:** apakah setuju membangun SIMRS operasional sebagai modular monolith Python (Django + DRF + PostgreSQL), dengan prototipe Python/Streamlit diagnosis tetap dipisahkan sampai integrasi disetujui? **Default:** ya; logika bisnis seluruhnya Python dan prototipe diagnosis tidak otomatis menjadi sumber rekam medis resmi.
 7. **Kesiapan tata kelola:** siapa wakil dokter, perawat, farmasi, lab, rekam medis, keuangan, keamanan, hukum, dan manajemen yang dapat memberi sign-off? **Default:** daftar peran disiapkan dahulu; fitur klinis berisiko tinggi tetap diblokir sampai validasi formal.
 
 ## 3. Alur pasien end-to-end (target)
