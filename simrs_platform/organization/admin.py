@@ -1,11 +1,14 @@
 from django.contrib import admin
+
 from organization.models import OrganizationUnit, UserUnitAssignment
+
 
 @admin.register(OrganizationUnit)
 class OrganizationUnitAdmin(admin.ModelAdmin):
     list_display = ("code", "name", "unit_type", "parent", "is_active")
     list_filter = ("unit_type", "is_active")
     search_fields = ("code", "name")
+
 
 @admin.register(UserUnitAssignment)
 class UserUnitAssignmentAdmin(admin.ModelAdmin):

@@ -1,5 +1,7 @@
 from django.contrib import admin
+
 from identity.models import RoleAssignment
+
 
 @admin.register(RoleAssignment)
 class RoleAssignmentAdmin(admin.ModelAdmin):
