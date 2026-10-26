@@ -1,7 +1,7 @@
 # PROJECT_STATE — AsistenDiagnosis / SIMRS Blueprint
 
 Last updated: 2026-10-26  
-Current phase: **Fase 2 — Front Office dan billing/kasir demo; menunggu validasi CI sebelum merge**  
+Current phase: **Fase 2 — Front Office, antrean, tarif, invoice dan kasir demo merged ke main pada 2026-10-26; CI main sukses**  
 Repository: https://github.com/muhharis99/AsistenDiagnosis
 
 ## Current reality
