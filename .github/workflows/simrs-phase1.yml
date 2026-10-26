@@ -37,7 +37,7 @@ jobs:
           uv run python manage.py makemigrations organization identity terminology mpi platform_core
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add simrs_platform/uv.lock simrs_platform/organization/migrations simrs_platform/identity/migrations simrs_platform/terminology/migrations simrs_platform/mpi/migrations simrs_platform/platform_core/migrations
+          git add uv.lock organization/migrations identity/migrations terminology/migrations mpi/migrations platform_core/migrations
           if ! git diff --cached --quiet; then
             git commit -m "build(simrs): lock dependencies and add Phase 1 migrations"
             git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
