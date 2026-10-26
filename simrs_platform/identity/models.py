@@ -16,6 +16,8 @@ class RoleAssignment(models.Model):
         LAB = "LAB", "Laboratorium"
         RADIOLOGY = "RADIOLOGY", "Radiologi"
         CASHIER = "CASHIER", "Kasir"
+        INSURANCE_BILLING = "INSURANCE_BILLING", "Petugas Klaim dan Penjamin"
+        PAYER_REVIEWER = "PAYER_REVIEWER", "Penelaah Penjamin"
         AUDITOR = "AUDITOR", "Auditor"
 
     user = models.ForeignKey(

@@ -1,15 +1,17 @@
 # PROJECT_STATE — AsistenDiagnosis / SIMRS Blueprint
 
 Last updated: 2026-10-26
-Current phase: Fase 3 — clinical vertical slice demo; status CI and PR reflect implementation progress.
+Current phase: Fase 4 — payer, claims, AR/COB demo workflow.
 Repository: https://github.com/muhharis99/AsistenDiagnosis
 
 ## Current reality
 - Repo tetap memuat prototipe diagnosis Python/Streamlit dan modul RME/SATUSEHAT sandbox/demo.
 - SIMRS modular monolith di simrs_platform/ dibangun terpisah; repo belum menjadi SIMRS operasional.
 - Jangan proses data pasien nyata atau gunakan hasil untuk keputusan klinis/finansial operasional tanpa validasi, kontrol keamanan independen, UAT dan persetujuan.
-- Fase 0 adalah blueprint; Fase 1 menambahkan fondasi Python/Django, identitas/role, unit, terminologi berversi, MPI demo terenkripsi dan audit hash-chain.
-- Fase 2 menambahkan pendaftaran, antrean, tarif, invoice dan pembayaran demo; PR #19 sudah merged.
+- Fase 1 memberi fondasi Python/Django, unit, role, terminologi berversi, MPI demo terenkripsi dan audit hash-chain.
+- Fase 2 menambahkan pendaftaran, antrean, tarif, invoice dan pembayaran demo.
+- Fase 3 menambahkan encounter, catatan RME berversi, diagnosis, order klinis, farmasi, hasil diagnostik berversi, dan ADT.
+- Fase 4 menambahkan master penjamin/paket, kepesertaan COB, alur klaim, adjudikasi demo, koleksi penjamin/pasien, dan subledger piutang.
 
 ## Architecture decisions
 - ADR-0001: modular monolith sebelum microservices.
@@ -21,34 +23,41 @@ Repository: https://github.com/muhharis99/AsistenDiagnosis
 
 ## Roadmap
 - Phase 0: blueprint arsitektur — drafted.
-- Phase 1: fondasi platform, organisasi unit, RBAC dasar, terminologi, MPI sintetis dan audit.
-- Phase 2: pendaftaran Front Office, antrean, katalog tarif, invoice dan pembayaran idempoten — merged ke main melalui PR #19; CI sukses.
-- Phase 3: encounter dan catatan RME berversi, diagnosis, order klinis, penyerahan farmasi, hasil LIS/RIS berversi, serta admisi/pemulangan ADT — cakupan awal demo.
-- Phase 4: payer, claims, AR/COB — belum dimulai.
-- Phase 5: adapter SATUSEHAT/BPJS/SISRUTE/reporting — modul demo bukan sertifikasi produksi.
-- Phase 6: logistik, aset, HR, akuntansi dan mutu — belum dimulai.
-- Phase 7: hardening, UAT, migrasi, parallel run, downtime dan rollback — belum dimulai.
+- Phase 1: fondasi platform, organisasi unit, RBAC, terminologi, MPI sintetis dan audit.
+- Phase 2: front office, antrean, katalog tarif, invoice dan pembayaran idempoten — PR #19 merged.
+- Phase 3: encounter, RME, diagnosis, CPOE, farmasi, diagnostik dan ADT — PR #20 merged.
+- Phase 4: payer, claims, receivables, coordination of benefits (COB) — fase demo ini.
+- Phase 5: adapter SATUSEHAT/BPJS/SISRUTE/reporting — bukan sertifikasi produksi.
+- Phase 6: logistik, aset, HR, akuntansi dan mutu.
+- Phase 7: hardening, UAT, migrasi, parallel run, downtime dan rollback.
+
+## Fase 4 design notes
+- Coverage terkait pasien MPI dan tanggal kunjungan, dengan prioritas COB 1–3.
+- Klaim primer menggunakan nilai invoice terbit; klaim berikutnya mengambil sisa piutang pasien dari penjamin sebelumnya.
+- Pengajuan klaim mencatat piutang penjamin; adjudikasi mendistribusikan nilai allowed, denied, dan tanggung jawab pasien.
+- Koleksi penjamin dan pasien idempoten; saldo tidak boleh negatif karena kelebihan penerimaan ditolak.
+- Ledger append-only dengan audit event; role baru INSURANCE_BILLING dan PAYER_REVIEWER.
+- Status keselamatan: demo-only, data sintetis, belum siap produksi; subledger piutang belum terintegrasi dengan pembayaran kasir Fase 2.
 
 ## Fase 3 design notes
 - Encounter merujuk registrasi yang sudah check-in dan unit layanan terotorisasi.
 - Catatan klinis dan hasil diagnostik append-only/versioned; hasil final dikoreksi dengan amendemen.
-- Order klinis berisi snapshot kode/nama yang dimasukkan dan status transisi yang dikontrol; ini belum merupakan katalog resmi atau formularium tervalidasi.
-- Penyerahan obat dapat parsial dan dijaga agar tidak melampaui jumlah resep.
-- ADT mensyaratkan unit rawat aktif serta merekam admisi dan pemulangan melalui transisi status.
-- Role baru RADIOLOGY digunakan untuk order pencitraan; akses tetap berdasarkan unit.
-- Status keselamatan: demo-only, data sintetis, belum siap produksi.
+- Order klinis berisi snapshot kode/nama, status transisi dikontrol, dan belum merupakan katalog resmi atau formularium tervalidasi.
+- Penyerahan obat dapat parsial dengan jumlah total tidak melebihi resep.
+- ADT mensyaratkan unit rawat aktif dan merekam admisi/pemulangan melalui transisi status.
 
 ## Fase 2 design notes
 - Registrasi hanya merujuk pasien MPI aktif dan unit aktif. Kode registrasi serta antrean berscope per unit/tanggal.
 - Transisi antrean dikontrol dan diaudit.
 - Invoice menyimpan snapshot kode/nama/harga tarif. Baris invoice yang diterbitkan dan pembayaran bersifat append-only.
-- Pembayaran membutuhkan idempotency key, referensi non-tunai dan guard sisa tagihan; audit tidak menyimpan nama/NIK atau isi request.
-- Sisa pekerjaan: tes konkurensi PostgreSQL, ABAC per relasi layanan/encounter, refund/reversal, rekonsiliasi pembayaran, integrasi struk, kontrak eksternal, pentest independen, UAT, backup/restore dan sign-off.
+- Pembayaran membutuhkan idempotency key, referensi non-tunai, dan guard sisa tagihan.
+- Sisa pekerjaan: refund/reversal, rekonsiliasi pembayaran, integrasi struk, pentest independen, UAT, backup/restore, dan sign-off.
 
 ## Glossary
 - MPI: Master Patient Index.
 - MRN: Medical Record Number / Nomor Rekam Medis.
 - RME: Rekam Medis Elektronik.
+- COB: Coordination of Benefits.
 - ABAC/RBAC: attribute-/role-based access control.
 - ADR: Architecture Decision Record.
 - FHIR: Fast Healthcare Interoperability Resources.

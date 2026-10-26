@@ -7,6 +7,7 @@ on:
       - "feat/fase-1-foundation-20261026"
       - "feat/fase-2-frontoffice-cashier-20261026"
       - "feat/fase-3-clinical-core-20261026"
+      - "feat/fase-4-payer-claims-20261026"
     paths:
       - "simrs_platform/**"
       - ".github/workflows/simrs-phase1.yml"
@@ -41,7 +42,9 @@ jobs:
           uv sync --all-groups
           uv run ruff check . --fix
           uv run ruff format .
-          uv run python manage.py makemigrations organization identity terminology mpi platform_core frontoffice cashier clinical orders pharmacy diagnostics adt
+          uv run python manage.py makemigrations organization identity terminology mpi platform_core frontoffice cashier clinical orders pharmacy diagnostics adt payer claims receivables
+          uv run ruff check . --fix
+          uv run ruff format .
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -59,4 +62,4 @@ jobs:
       - name: Lint
         run: uv run ruff check .
       - name: Compile
-        run: uv run python -m compileall -q config organization identity terminology mpi platform_core frontoffice cashier clinical orders pharmacy diagnostics adt
+        run: uv run python -m compileall -q config organization identity terminology mpi platform_core frontoffice cashier clinical orders pharmacy diagnostics adt payer claims receivables
