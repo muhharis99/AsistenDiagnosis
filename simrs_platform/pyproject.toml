@@ -38,6 +38,7 @@ src = ["."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
 ignore = ["S101"]
 
 [tool.mypy]
