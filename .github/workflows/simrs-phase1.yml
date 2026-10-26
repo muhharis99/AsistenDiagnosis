@@ -43,6 +43,8 @@ jobs:
           uv run ruff check . --fix
           uv run ruff format .
           uv run python manage.py makemigrations organization identity terminology mpi platform_core frontoffice cashier clinical orders pharmacy diagnostics adt payer claims receivables
+          uv run ruff check . --fix
+          uv run ruff format .
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
