@@ -5,47 +5,73 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='CodeSystem',
+            name="CodeSystem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('uri', models.URLField(max_length=255)),
-                ('name', models.CharField(max_length=120)),
-                ('version', models.CharField(max_length=40)),
-                ('source_url', models.URLField(blank=True, max_length=500)),
-                ('effective_from', models.DateField(blank=True, null=True)),
-                ('effective_to', models.DateField(blank=True, null=True)),
-                ('is_verified', models.BooleanField(default=False)),
-                ('notes', models.TextField(blank=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("uri", models.URLField(max_length=255)),
+                ("name", models.CharField(max_length=120)),
+                ("version", models.CharField(max_length=40)),
+                ("source_url", models.URLField(blank=True, max_length=500)),
+                ("effective_from", models.DateField(blank=True, null=True)),
+                ("effective_to", models.DateField(blank=True, null=True)),
+                ("is_verified", models.BooleanField(default=False)),
+                ("notes", models.TextField(blank=True)),
             ],
             options={
-                'ordering': ['uri', 'version'],
-                'constraints': [models.UniqueConstraint(fields=('uri', 'version'), name='uniq_codesystem_version')],
+                "ordering": ["uri", "version"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("uri", "version"), name="uniq_codesystem_version"
+                    )
+                ],
             },
         ),
         migrations.CreateModel(
-            name='CodeTerm',
+            name="CodeTerm",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=80)),
-                ('display', models.CharField(max_length=240)),
-                ('definition', models.TextField(blank=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('effective_from', models.DateField(blank=True, null=True)),
-                ('effective_to', models.DateField(blank=True, null=True)),
-                ('system', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='terms', to='terminology.codesystem')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("code", models.CharField(max_length=80)),
+                ("display", models.CharField(max_length=240)),
+                ("definition", models.TextField(blank=True)),
+                ("is_active", models.BooleanField(default=True)),
+                ("effective_from", models.DateField(blank=True, null=True)),
+                ("effective_to", models.DateField(blank=True, null=True)),
+                (
+                    "system",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="terms",
+                        to="terminology.codesystem",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['system_id', 'code'],
-                'indexes': [models.Index(fields=['code'], name='terminology_code_69d0d7_idx'), models.Index(fields=['display'], name='terminology_display_68ae89_idx')],
-                'constraints': [models.UniqueConstraint(fields=('system', 'code'), name='uniq_term_per_system_version')],
+                "ordering": ["system_id", "code"],
+                "indexes": [
+                    models.Index(fields=["code"], name="terminology_code_69d0d7_idx"),
+                    models.Index(fields=["display"], name="terminology_display_68ae89_idx"),
+                ],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("system", "code"), name="uniq_term_per_system_version"
+                    )
+                ],
             },
         ),
     ]

@@ -7,29 +7,77 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('organization', '0001_initial'),
+        ("organization", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RoleAssignment',
+            name="RoleAssignment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('role', models.CharField(choices=[('SYSTEM_ADMIN', 'Administrator Sistem'), ('REGISTRAR', 'Petugas Pendaftaran'), ('MEDICAL_RECORDS', 'Perekam Medis'), ('DOCTOR', 'Dokter'), ('NURSE', 'Perawat/Bidan'), ('PHARMACY', 'Farmasi'), ('LAB', 'Laboratorium'), ('CASHIER', 'Kasir'), ('AUDITOR', 'Auditor')], max_length=24)),
-                ('is_active', models.BooleanField(default=True)),
-                ('starts_at', models.DateTimeField(default=django.utils.timezone.now)),
-                ('ends_at', models.DateTimeField(blank=True, null=True)),
-                ('granted_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='roles_granted', to=settings.AUTH_USER_MODEL)),
-                ('unit', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='organization.organizationunit')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='simrs_role_assignments', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            ("SYSTEM_ADMIN", "Administrator Sistem"),
+                            ("REGISTRAR", "Petugas Pendaftaran"),
+                            ("MEDICAL_RECORDS", "Perekam Medis"),
+                            ("DOCTOR", "Dokter"),
+                            ("NURSE", "Perawat/Bidan"),
+                            ("PHARMACY", "Farmasi"),
+                            ("LAB", "Laboratorium"),
+                            ("CASHIER", "Kasir"),
+                            ("AUDITOR", "Auditor"),
+                        ],
+                        max_length=24,
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("starts_at", models.DateTimeField(default=django.utils.timezone.now)),
+                ("ends_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "granted_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="roles_granted",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "unit",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="organization.organizationunit",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="simrs_role_assignments",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'indexes': [models.Index(fields=['user', 'role', 'is_active'], name='identity_ro_user_id_f6be7e_idx')],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "role", "is_active"], name="identity_ro_user_id_f6be7e_idx"
+                    )
+                ],
             },
         ),
     ]
