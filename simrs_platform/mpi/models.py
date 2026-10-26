@@ -71,7 +71,7 @@ class DuplicateReview(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["patient", "candidate"], name="uniq_mpi_duplicate_review_pair"),
-            models.CheckConstraint(condition=~models.Q(patient=models.F("candidate")), name="mpi_duplicate_pair_not_self"),
+            models.CheckConstraint(condition=~models.Q(patient_id=models.F("candidate_id")), name="mpi_duplicate_pair_not_self"),
         ]
 
 class PatientMergeEvent(models.Model):
@@ -82,4 +82,4 @@ class PatientMergeEvent(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        constraints = [models.CheckConstraint(condition=~models.Q(source=models.F("target")), name="mpi_merge_not_self")]
+        constraints = [models.CheckConstraint(condition=~models.Q(source_id=models.F("target_id")), name="mpi_merge_not_self")]
