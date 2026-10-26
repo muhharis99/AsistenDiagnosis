@@ -1,4 +1,4 @@
-# SIMRS Platform Foundation — Fase 1–3
+# SIMRS Platform Foundation — Fase 1–4
 
 Fondasi modular monolith Python/Django ini merupakan prototipe demo, bukan aplikasi rumah sakit operasional. Gunakan hanya data sintetis; jangan masukkan data pasien nyata.
 
@@ -7,6 +7,7 @@ Fondasi modular monolith Python/Django ini merupakan prototipe demo, bukan aplik
 - Fase 1: unit organisasi, role assignment, terminologi berversi, MPI demo terenkripsi, dan audit hash-chain append-only.
 - Fase 2: registrasi pasien dari MPI, antrean harian per unit, katalog tarif bertanggal efektif, invoice dengan snapshot harga, serta pencatatan pembayaran idempoten.
 - Fase 3: encounter klinis, catatan RME append-only berversi, diagnosis, order obat/laboratorium/radiologi/tindakan, penyerahan obat parsial, hasil diagnostik berversi, serta admisi dan pemulangan ADT.
+- Fase 4: master penjamin/paket, kepesertaan dan koordinasi penjamin (COB), alur klaim, adjudikasi demo, penerimaan penjamin/pasien, dan buku besar piutang append-only.
 - API memeriksa role dan penugasan unit. Audit tidak menyimpan nama pasien, NIK, password, instruksi medis, atau isi hasil.
 - Mode demo dikunci ke APP_MODE=demo.
 
@@ -28,20 +29,26 @@ Atur MPI_ENCRYPTION_KEY dan MPI_HMAC_KEY di .env untuk operasi MPI. Jangan commi
 - OpenAPI: /api/docs/
 - Registrasi dan antrean: /api/frontoffice/
 - Tarif, invoice, pembayaran: /api/cashier/
-- Encounter: POST/GET /api/clinical/encounters/ (GET membutuhkan unit_id).
-- Catatan RME: GET/POST /api/clinical/encounters/{encounter_id}/notes/.
-- Diagnosis: POST /api/clinical/encounters/{encounter_id}/diagnoses/.
-- Order klinis: POST /api/orders/orders/; daftar order: GET /api/orders/orders/?encounter_id={uuid}.
-- Pembatalan order: POST /api/orders/orders/{order_id}/cancel/.
-- Penyerahan obat: GET/POST /api/pharmacy/orders/{order_id}/dispenses/.
-- Hasil laboratorium/radiologi: GET/POST /api/diagnostics/orders/{order_id}/results/.
-- ADT: GET/POST /api/adt/admissions/ (GET membutuhkan ward_unit_id).
-- Pemulangan: POST /api/adt/admissions/{admission_id}/discharge/.
+- Encounter, RME, diagnosis: /api/clinical/
+- Order klinis: /api/orders/
+- Penyerahan obat: /api/pharmacy/
+- Hasil laboratorium/radiologi: /api/diagnostics/
+- ADT admisi dan pemulangan: /api/adt/
+- Master penjamin: GET/POST /api/payers/payers/.
+- Paket penjamin: GET/POST /api/payers/plans/.
+- Kepesertaan: GET/POST /api/payers/coverages/.
+- Penetapan urutan COB: GET/POST /api/payers/registration-coverages/.
+- Klaim per registrasi: GET /api/claims/claims/?registration_id={uuid}; klaim baru: POST /api/claims/claims/.
+- Pengajuan klaim: POST /api/claims/claims/{claim_id}/submit/.
+- Adjudikasi sintetis: POST /api/claims/claims/{claim_id}/adjudicate/.
+- Penerimaan penjamin: POST /api/claims/claims/{claim_id}/remittances/.
+- Pembayaran tanggung jawab pasien: POST /api/claims/claims/{claim_id}/patient-payments/.
+- Ringkasan piutang per registrasi: GET /api/claims/receivables/?registration_id={uuid}.
 
-## Aturan klinis awal
+## Aturan penjamin dan piutang
 
-Encounter hanya dapat dibuat dari registrasi yang sudah check-in atau sedang dilayani. Catatan RME dan hasil diagnostik tidak dapat ditimpa/dihapus melalui model; koreksi dibuat sebagai versi baru. Diagnosis utama kedua pada encounter ditolak. Order obat wajib berisi dosis, rute, frekuensi dan durasi; order laboratorium/radiologi membutuhkan indikasi. Order dibatalkan hanya dari status ORDERED. Penyerahan obat bisa parsial, tetapi jumlah total tidak boleh melebihi resep. Hasil final hanya dapat diperbaiki dengan amendemen baru. Admisi memerlukan ruang rawat aktif; pasien hanya dapat dipulangkan sekali melalui transisi status yang diaudit.
+Kepesertaan harus aktif dan terverifikasi pada tanggal kunjungan. Penjamin diletakkan berurutan pada prioritas COB 1–3. Klaim pertama menggunakan total invoice yang terbit; klaim penjamin berikutnya hanya menggunakan sisa piutang pasien yang belum tertagih dari adjudikasi penjamin sebelumnya. Pengajuan membukukan piutang penjamin; adjudikasi membagi nominal ke nilai yang disetujui, ditolak, dan tanggung jawab pasien, yang harus tepat sama dengan nilai klaim. Penerimaan wajib memiliki referensi dan idempotency key, dan tidak boleh melebihi saldo terkait. Entri ledger, adjudikasi, baris klaim, dan penerimaan tidak boleh ditimpa atau dihapus.
 
 ## Batasan dan tindak lanjut
 
-Katalog order/obat belum terhubung ke formularium atau master pemeriksaan tervalidasi. Belum ada pengecekan alergi/interaksi, stok farmasi, validasi dosis, tanda tangan elektronik tersertifikasi, bed management, integrasi alat LIS/RIS, standar hasil terstruktur, maupun evaluasi klinis yang disetujui. Tidak ada integrasi BPJS/SATUSEHAT dalam fase ini. Konkurensi harus diuji pada PostgreSQL; SQLite hanya untuk demo lokal. Refund/pembalikan finansial, rekonsiliasi, pentest independen, UAT, backup/restore, dan persetujuan klinis/manajemen belum selesai. Belum layak produksi.
+Adjudikasi di sini adalah input demo manual, bukan koneksi penjamin eksternal. Koreksi adjudikasi, reversal/refund, rekonsiliasi remittance, standar kode klaim, aturan manfaat plan, COB komersial yang sesungguhnya, pemetaan ke tarif/DRG, integrasi BPJS atau asuransi, dan perlakuan pajak/akuntansi belum diimplementasikan atau disertifikasi. Saldo klaim ini merupakan subledger demo terpisah dari pembayaran kasir Fase 2; integrasi posting silang perlu dirancang dan diuji sebelum operasional. Konkurensi wajib diuji pada PostgreSQL; SQLite hanya untuk demo lokal. Belum ada pentest independen, UAT, backup/restore, atau persetujuan hukum, klinis dan manajemen. Belum layak produksi.

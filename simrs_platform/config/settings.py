@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 APP_MODE = os.getenv("APP_MODE", "demo").strip().lower()
 if APP_MODE != "demo":
-    raise ImproperlyConfigured("Fase 3 tetap demo-only. APP_MODE harus tetap 'demo'.")
+    raise ImproperlyConfigured("Fase 4 tetap demo-only. APP_MODE harus tetap 'demo'.")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
 if not SECRET_KEY:
     if os.getenv("DJANGO_DEBUG", "true").lower() != "true":
@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     "pharmacy",
     "diagnostics",
     "adt",
+    "payer",
+    "claims",
+    "receivables",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -129,7 +132,7 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "SIMRS Platform API",
-    "DESCRIPTION": "Fase 1-3 demo foundation; synthetic data only.",
-    "VERSION": "0.3.0",
+    "DESCRIPTION": "Fase 1-4 demo foundation; synthetic data only.",
+    "VERSION": "0.4.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
