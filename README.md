@@ -219,3 +219,8 @@ Pemeriksaan ini menggunakan helper audit yang sudah ada, tidak mengubah skema da
 ## Fase 7G — Kesiapan operasional sandbox
 
 Menu Integrasi SATUSEHAT kini memiliki pemeriksaan operasional lokal yang menyajikan hasil konfigurasi teredaksi, jumlah status outbox/transmisi demo, dan integritas audit. Pemeriksaan tidak memanggil jaringan, tidak mengubah status transaksi, dan menandai status `sending`/`uncertain` untuk tinjauan. Detail ada di [docs/FASE_7G_KESIAPAN_OPERASIONAL.md](docs/FASE_7G_KESIAPAN_OPERASIONAL.md). Status yang lolos tidak membuktikan OAuth/koneksi atau penerimaan resource oleh SATUSEHAT.
+
+
+## Fase 7H — Kontrak FHIR dan skenario kegagalan
+
+Menambahkan tes kontrak lokal untuk Condition, Composition, Observation, ClinicalImpression, dan Encounter, serta simulasi HTTP 201 tanpa ID resource dan HTTP 5xx. Hasil tulis yang tidak dapat dipastikan tetap `uncertain` dan tidak di-POST ulang otomatis. Lihat [docs/FASE_7H_KONTRAK_FHIR_DAN_KEGAGALAN.md](docs/FASE_7H_KONTRAK_FHIR_DAN_KEGAGALAN.md). Tes memakai fake transport dan data sintetis; ini bukan validator penuh profil FHIR/SATUSEHAT dan tidak membuktikan koneksi staging.
