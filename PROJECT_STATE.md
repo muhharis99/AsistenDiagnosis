@@ -21,7 +21,7 @@ Repository: https://github.com/muhharis99/AsistenDiagnosis
 ## Roadmap
 - Phase 0: blueprint arsitektur — drafted.
 - Phase 1: fondasi platform, organisasi unit, RBAC dasar, terminologi, MPI sintetis dan audit.
-- Phase 2: pendaftaran Front Office, antrean unit, katalog tarif, snapshot invoice dan pembayaran kasir idempoten — diimplementasikan di simrs_platform/frontoffice/ dan simrs_platform/cashier/; harus lulus CI dan merge review.
+- Phase 2: pendaftaran Front Office, antrean unit, katalog tarif, snapshot invoice dan pembayaran kasir idempoten — sudah merged ke main melalui PR #19 pada 2026-10-26; CI branch dan CI main berhasil menjalankan Django checks, migrasi, 10 tes, Ruff, dan compileall.
 - Phase 3: RME, CPOE, farmasi, LIS/RIS, IGD dan ADT — belum dimulai.
 - Phase 4: payer, claims, AR/COB — belum dimulai.
 - Phase 5: adapter SATUSEHAT/BPJS/SISRUTE/reporting — modul demo bukan sertifikasi produksi.
