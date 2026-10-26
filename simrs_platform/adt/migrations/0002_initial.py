@@ -5,28 +5,37 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('adt', '0001_initial'),
-        ('clinical', '0001_initial'),
-        ('organization', '0001_initial'),
+        ("adt", "0001_initial"),
+        ("clinical", "0001_initial"),
+        ("organization", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='admission',
-            name='encounter',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='admission', to='clinical.encounter'),
+            model_name="admission",
+            name="encounter",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="admission",
+                to="clinical.encounter",
+            ),
         ),
         migrations.AddField(
-            model_name='admission',
-            name='ward',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions', to='organization.organizationunit'),
+            model_name="admission",
+            name="ward",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="admissions",
+                to="organization.organizationunit",
+            ),
         ),
         migrations.AddIndex(
-            model_name='admission',
-            index=models.Index(fields=['ward', 'status', 'admitted_at'], name='adt_admissi_ward_id_4627f1_idx'),
+            model_name="admission",
+            index=models.Index(
+                fields=["ward", "status", "admitted_at"], name="adt_admissi_ward_id_4627f1_idx"
+            ),
         ),
     ]

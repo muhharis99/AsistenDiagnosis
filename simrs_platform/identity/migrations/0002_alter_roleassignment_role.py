@@ -4,15 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('identity', '0001_initial'),
+        ("identity", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='roleassignment',
-            name='role',
-            field=models.CharField(choices=[('SYSTEM_ADMIN', 'Administrator Sistem'), ('REGISTRAR', 'Petugas Pendaftaran'), ('MEDICAL_RECORDS', 'Perekam Medis'), ('DOCTOR', 'Dokter'), ('NURSE', 'Perawat/Bidan'), ('PHARMACY', 'Farmasi'), ('LAB', 'Laboratorium'), ('RADIOLOGY', 'Radiologi'), ('CASHIER', 'Kasir'), ('AUDITOR', 'Auditor')], max_length=24),
+            model_name="roleassignment",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("SYSTEM_ADMIN", "Administrator Sistem"),
+                    ("REGISTRAR", "Petugas Pendaftaran"),
+                    ("MEDICAL_RECORDS", "Perekam Medis"),
+                    ("DOCTOR", "Dokter"),
+                    ("NURSE", "Perawat/Bidan"),
+                    ("PHARMACY", "Farmasi"),
+                    ("LAB", "Laboratorium"),
+                    ("RADIOLOGY", "Radiologi"),
+                    ("CASHIER", "Kasir"),
+                    ("AUDITOR", "Auditor"),
+                ],
+                max_length=24,
+            ),
         ),
     ]
