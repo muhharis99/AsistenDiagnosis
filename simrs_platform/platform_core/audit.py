@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 from typing import Any
 
@@ -144,7 +145,7 @@ def verify_audit_chain() -> tuple[bool, int | None]:
                 created_at=event.created_at,
             )
         ).hexdigest()
-        if not hashlib.compare_digest(expected_hash, event.event_hash):
+        if not hmac.compare_digest(expected_hash, event.event_hash):
             return False, event.sequence
         expected_previous = event.event_hash
         expected_sequence += 1
