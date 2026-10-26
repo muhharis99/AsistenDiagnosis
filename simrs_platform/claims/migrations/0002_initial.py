@@ -6,114 +6,181 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('cashier', '0001_initial'),
-        ('claims', '0001_initial'),
-        ('frontoffice', '0001_initial'),
-        ('payer', '0001_initial'),
+        ("cashier", "0001_initial"),
+        ("claims", "0001_initial"),
+        ("frontoffice", "0001_initial"),
+        ("payer", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='claim',
-            name='coverage_assignment',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='claims', to='payer.registrationcoverage'),
+            model_name="claim",
+            name="coverage_assignment",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="claims",
+                to="payer.registrationcoverage",
+            ),
         ),
         migrations.AddField(
-            model_name='claim',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='payer_claims_created', to=settings.AUTH_USER_MODEL),
+            model_name="claim",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="payer_claims_created",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='claim',
-            name='invoice',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='payer_claims', to='cashier.invoice'),
+            model_name="claim",
+            name="invoice",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="payer_claims",
+                to="cashier.invoice",
+            ),
         ),
         migrations.AddField(
-            model_name='claim',
-            name='registration',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='payer_claims', to='frontoffice.registration'),
+            model_name="claim",
+            name="registration",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="payer_claims",
+                to="frontoffice.registration",
+            ),
         ),
         migrations.AddField(
-            model_name='claimadjudication',
-            name='claim',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='adjudications', to='claims.claim'),
+            model_name="claimadjudication",
+            name="claim",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="adjudications",
+                to="claims.claim",
+            ),
         ),
         migrations.AddField(
-            model_name='claimadjudication',
-            name='recorded_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='claim_adjudications_recorded', to=settings.AUTH_USER_MODEL),
+            model_name="claimadjudication",
+            name="recorded_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="claim_adjudications_recorded",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='claimcollection',
-            name='claim',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='collections', to='claims.claim'),
+            model_name="claimcollection",
+            name="claim",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="collections",
+                to="claims.claim",
+            ),
         ),
         migrations.AddField(
-            model_name='claimcollection',
-            name='recorded_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='claim_collections_recorded', to=settings.AUTH_USER_MODEL),
+            model_name="claimcollection",
+            name="recorded_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="claim_collections_recorded",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='claimline',
-            name='claim',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='lines', to='claims.claim'),
+            model_name="claimline",
+            name="claim",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, related_name="lines", to="claims.claim"
+            ),
         ),
         migrations.AddField(
-            model_name='claimline',
-            name='invoice_line',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='payer_claim_lines', to='cashier.invoiceline'),
+            model_name="claimline",
+            name="invoice_line",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="payer_claim_lines",
+                to="cashier.invoiceline",
+            ),
         ),
         migrations.AddIndex(
-            model_name='claim',
-            index=models.Index(fields=['status', 'created_at'], name='claims_clai_status_58edc3_idx'),
+            model_name="claim",
+            index=models.Index(
+                fields=["status", "created_at"], name="claims_clai_status_58edc3_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claim',
-            constraint=models.UniqueConstraint(fields=('registration', 'coverage_assignment'), name='uniq_claim_registration_coverage'),
+            model_name="claim",
+            constraint=models.UniqueConstraint(
+                fields=("registration", "coverage_assignment"),
+                name="uniq_claim_registration_coverage",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claim',
-            constraint=models.CheckConstraint(condition=models.Q(('claimed_amount__gt', 0)), name='claim_amount_positive'),
+            model_name="claim",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("claimed_amount__gt", 0)), name="claim_amount_positive"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimadjudication',
-            constraint=models.UniqueConstraint(fields=('claim', 'version'), name='uniq_claim_adjudication_version'),
+            model_name="claimadjudication",
+            constraint=models.UniqueConstraint(
+                fields=("claim", "version"), name="uniq_claim_adjudication_version"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimadjudication',
-            constraint=models.CheckConstraint(condition=models.Q(('allowed_amount__gte', 0)), name='claim_allowed_nonnegative'),
+            model_name="claimadjudication",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("allowed_amount__gte", 0)), name="claim_allowed_nonnegative"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimadjudication',
-            constraint=models.CheckConstraint(condition=models.Q(('denied_amount__gte', 0)), name='claim_denied_nonnegative'),
+            model_name="claimadjudication",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("denied_amount__gte", 0)), name="claim_denied_nonnegative"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimadjudication',
-            constraint=models.CheckConstraint(condition=models.Q(('patient_responsibility__gte', 0)), name='claim_patient_share_nonnegative'),
+            model_name="claimadjudication",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("patient_responsibility__gte", 0)),
+                name="claim_patient_share_nonnegative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimadjudication',
-            constraint=models.CheckConstraint(condition=models.Q(('external_reference', ''), _negated=True), name='claim_adjudication_reference_not_blank'),
+            model_name="claimadjudication",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("external_reference", ""), _negated=True),
+                name="claim_adjudication_reference_not_blank",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimcollection',
-            constraint=models.CheckConstraint(condition=models.Q(('amount__gt', 0)), name='claim_collection_amount_positive'),
+            model_name="claimcollection",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("amount__gt", 0)), name="claim_collection_amount_positive"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimcollection',
-            constraint=models.CheckConstraint(condition=models.Q(('external_reference', ''), _negated=True), name='claim_collection_reference_not_blank'),
+            model_name="claimcollection",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("external_reference", ""), _negated=True),
+                name="claim_collection_reference_not_blank",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimline',
-            constraint=models.CheckConstraint(condition=models.Q(('quantity__gt', 0)), name='claim_line_quantity_positive'),
+            model_name="claimline",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("quantity__gt", 0)), name="claim_line_quantity_positive"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='claimline',
-            constraint=models.CheckConstraint(condition=models.Q(('claimed_amount__gt', 0)), name='claim_line_amount_positive'),
+            model_name="claimline",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("claimed_amount__gt", 0)), name="claim_line_amount_positive"
+            ),
         ),
     ]
