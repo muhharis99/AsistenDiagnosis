@@ -17,6 +17,7 @@ from rme.integrations.satusehat.live_service import (
 )
 from rme.models import OutboxSync, Patient, SATUSEHATTransmission, Visit
 from rme.security import require_permission
+from rme.integrations.satusehat.readiness import build_sandbox_operational_readiness
 
 
 def _allowed(user, permission: str) -> bool:
@@ -38,6 +39,51 @@ def render_phase5_sandbox_tools(factory, user, cipher) -> None:
     else:
         st.warning("Permintaan berikut benar-benar akan mencapai SATUSEHAT STAGING. Gunakan data uji sintetis saja; jangan gunakan nama/NIK atau catatan dari pasien nyata.")
     st.caption("Klien dibatasi ke endpoint staging resmi, tidak mengikuti redirect, menggunakan TLS verification, dan tidak menampilkan atau mencatat client secret, access token, NIK, atau body respons mentah.")
+
+    if _allowed(user, "satusehat:read"):
+        with st.expander("Fase 7G — Kesiapan operasional sandbox (tanpa jaringan)", expanded=False):
+            st.caption("Ringkasan ini tidak menguji koneksi dan tidak mengirim resource. Hasilnya hanya prasyarat untuk tinjauan operator.")
+            if st.button("Periksa kesiapan operasional", key="phase7g_operational_readiness"):
+                try:
+                    with factory() as session:
+                        report = build_sandbox_operational_readiness(session, user)
+                    if report["status"] == "BLOCKED":
+                        st.error("Status: BLOCKED — periksa kegagalan konfigurasi atau integritas audit sebelum melanjutkan.")
+                    elif report["status"] == "REVIEW_REQUIRED":
+                        st.warning("Status: REVIEW_REQUIRED — jaringan mungkin masih nonaktif atau ada transmisi yang memerlukan tinjauan.")
+                    else:
+                        st.info("Status: ELIGIBLE_FOR_OPERATOR_REVIEW — bukan otorisasi otomatis atau bukti koneksi berhasil.")
+                    st.caption(report["notice"])
+                    metric_cols = st.columns(4)
+                    metric_cols[0].metric("Status", report["status"])
+                    metric_cols[1].metric("Hash-chain audit", "Valid" if report["audit_chain_valid"] else "Tidak valid")
+                    metric_cols[2].metric("Opt-in jaringan", "Aktif" if report["network_opt_in"] else "Nonaktif")
+                    metric_cols[3].metric("Sending/uncertain", report["unresolved_transmission_count"])
+                    st.markdown("**Pemeriksaan konfigurasi (tanpa menampilkan secret)**")
+                    st.dataframe(pd.DataFrame([{
+                        "Pemeriksaan": row["item"],
+                        "Lulus": "Ya" if row["passed"] else "Tidak",
+                        "Keterangan": row["detail"],
+                    } for row in report["config_checks"]]), use_container_width=True, hide_index=True)
+                    status_rows = [
+                        {"Ledger": ledger, "Status": status, "Jumlah": count}
+                        for ledger, counts in (
+                            ("Outbox demo", report["outbox_counts"]),
+                            ("Transmisi demo", report["transmission_counts"]),
+                        )
+                        for status, count in counts.items()
+                    ]
+                    st.markdown("**Jumlah status ledger demo**")
+                    st.dataframe(pd.DataFrame(status_rows), use_container_width=True, hide_index=True)
+                    if not report["audit_chain_valid"]:
+                        st.error(f"Integritas audit tidak valid. ID entri pertama yang gagal: {report['audit_first_invalid_entry_id']}. Jangan memperbaiki hash secara manual.")
+                    if report["blocking_reasons"]:
+                        st.caption("Alasan yang perlu ditinjau: " + ", ".join(report["blocking_reasons"]))
+                except (PermissionError, ValueError):
+                    st.error("Pemeriksaan kesiapan tidak dapat dilakukan dengan izin atau kondisi saat ini.")
+                except Exception:
+                    st.error("Pemeriksaan gagal. Detail teknis dan data sensitif tidak ditampilkan.")
+
 
     with st.expander("Fase 6 — Siapkan resource RME untuk outbox (tanpa jaringan)", expanded=True):
         with factory() as session:
