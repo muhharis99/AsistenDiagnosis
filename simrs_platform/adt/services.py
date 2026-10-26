@@ -25,7 +25,9 @@ def admit_patient(*, encounter_id, ward_unit_id, admission_reason, actor):
         raise ValueError("Encounter tidak ditemukan.")
     if encounter.status != Encounter.Status.OPEN:
         raise ADTConflict("Encounter sudah ditutup.")
-    ward = OrganizationUnit.objects.select_for_update().filter(pk=ward_unit_id, is_active=True).first()
+    ward = (
+        OrganizationUnit.objects.select_for_update().filter(pk=ward_unit_id, is_active=True).first()
+    )
     if ward is None or ward.unit_type != OrganizationUnit.UnitType.WARD:
         raise ValueError("Unit tujuan harus berupa ruang rawat aktif.")
     if Admission.objects.filter(encounter=encounter).exists():
@@ -70,9 +72,7 @@ def discharge_patient(*, admission_id, discharge_summary, actor):
     row.discharged_by = actor
     row.discharged_at = timezone.now()
     row.discharge_summary = summary
-    row.save(
-        update_fields=["status", "discharged_by", "discharged_at", "discharge_summary"]
-    )
+    row.save(update_fields=["status", "discharged_by", "discharged_at", "discharge_summary"])
     record_audit_event(
         actor=actor,
         event_type="adt.admission.discharged",

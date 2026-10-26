@@ -94,9 +94,7 @@ def cancel_service_order(*, order_id, reason, actor):
     row.cancelled_by = actor
     row.cancelled_at = timezone.now()
     row.cancellation_reason = reason[:240]
-    row.save(
-        update_fields=["status", "cancelled_by", "cancelled_at", "cancellation_reason"]
-    )
+    row.save(update_fields=["status", "cancelled_by", "cancelled_at", "cancellation_reason"])
     record_audit_event(
         actor=actor,
         event_type="orders.service_order.cancelled",

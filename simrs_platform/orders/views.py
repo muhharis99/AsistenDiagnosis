@@ -11,7 +11,6 @@ from orders.models import ServiceOrder
 from orders.services import OrderConflict, cancel_service_order, create_service_order
 from platform_core.authorization import has_scoped_role
 
-
 DOCTOR_ROLES = {RoleAssignment.Role.SYSTEM_ADMIN, RoleAssignment.Role.DOCTOR}
 ORDER_READ_ROLES = {
     RoleAssignment.Role.SYSTEM_ADMIN,
@@ -35,17 +34,24 @@ class ServiceOrderRequest(serializers.Serializer):
     dose = serializers.CharField(max_length=120, required=False, allow_blank=True)
     route = serializers.CharField(max_length=80, required=False, allow_blank=True)
     frequency = serializers.CharField(max_length=120, required=False, allow_blank=True)
-    duration_days = serializers.IntegerField(min_value=1, max_value=365, required=False, allow_null=True)
+    duration_days = serializers.IntegerField(
+        min_value=1, max_value=365, required=False, allow_null=True
+    )
 
     def validate(self, attrs):
         kind = attrs["order_type"]
         if kind == ServiceOrder.OrderType.MEDICATION and not all(
             attrs.get(key, "").strip() for key in ("dose", "route", "frequency")
         ):
-            raise serializers.ValidationError("Order obat wajib memiliki dosis, rute, dan frekuensi.")
+            raise serializers.ValidationError(
+                "Order obat wajib memiliki dosis, rute, dan frekuensi."
+            )
         if kind == ServiceOrder.OrderType.MEDICATION and not attrs.get("duration_days"):
             raise serializers.ValidationError("Durasi order obat wajib diisi.")
-        if kind in {ServiceOrder.OrderType.LAB, ServiceOrder.OrderType.IMAGING} and not attrs.get("indication", "").strip():
+        if (
+            kind in {ServiceOrder.OrderType.LAB, ServiceOrder.OrderType.IMAGING}
+            and not attrs.get("indication", "").strip()
+        ):
             raise serializers.ValidationError("Indikasi klinis wajib untuk order diagnostik.")
         return attrs
 
@@ -81,7 +87,9 @@ class ServiceOrderCollectionView(APIView):
         encounter_id = request.query_params.get("encounter_id", "").strip()
         if not encounter_id:
             return Response({"detail": "encounter_id wajib diisi."}, status=400)
-        encounter = Encounter.objects.select_related("registration__unit").filter(pk=encounter_id).first()
+        encounter = (
+            Encounter.objects.select_related("registration__unit").filter(pk=encounter_id).first()
+        )
         if encounter is None:
             return Response({"detail": "Encounter tidak ditemukan."}, status=404)
         if not has_scoped_role(
@@ -96,15 +104,19 @@ class ServiceOrderCollectionView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
         data = serializer.validated_data
-        encounter = Encounter.objects.select_related("registration__unit").filter(
-            pk=data["encounter_id"]
-        ).first()
+        encounter = (
+            Encounter.objects.select_related("registration__unit")
+            .filter(pk=data["encounter_id"])
+            .first()
+        )
         if encounter is None:
             return Response({"detail": "Encounter tidak ditemukan."}, status=404)
         if not has_scoped_role(
             request.user, DOCTOR_ROLES, unit_id=str(encounter.registration.unit_id)
         ):
-            return Response({"detail": "Pembuatan order klinis memerlukan role dokter."}, status=403)
+            return Response(
+                {"detail": "Pembuatan order klinis memerlukan role dokter."}, status=403
+            )
         try:
             row = create_service_order(actor=request.user, **data)
         except OrderConflict as exc:
@@ -118,9 +130,11 @@ class ServiceOrderCancelView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, order_id):
-        row = ServiceOrder.objects.select_related("encounter__registration__unit").filter(
-            pk=order_id
-        ).first()
+        row = (
+            ServiceOrder.objects.select_related("encounter__registration__unit")
+            .filter(pk=order_id)
+            .first()
+        )
         if row is None:
             return Response({"detail": "Order tidak ditemukan."}, status=404)
         if not has_scoped_role(

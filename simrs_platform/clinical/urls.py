@@ -1,6 +1,10 @@
 from django.urls import path
 
-from clinical.views import ClinicalNoteCollectionView, DiagnosisCollectionView, EncounterCollectionView
+from clinical.views import (
+    ClinicalNoteCollectionView,
+    DiagnosisCollectionView,
+    EncounterCollectionView,
+)
 
 urlpatterns = [
     path("encounters/", EncounterCollectionView.as_view(), name="clinical-encounters"),

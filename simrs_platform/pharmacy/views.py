@@ -11,7 +11,6 @@ from pharmacy.models import MedicationDispense
 from pharmacy.services import DispenseConflict, dispense_medication
 from platform_core.authorization import has_scoped_role
 
-
 PHARMACY_ROLES = {RoleAssignment.Role.SYSTEM_ADMIN, RoleAssignment.Role.PHARMACY}
 
 
@@ -36,9 +35,11 @@ class MedicationDispenseCollectionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, order_id):
-        order = ServiceOrder.objects.select_related("encounter__registration__unit").filter(
-            pk=order_id
-        ).first()
+        order = (
+            ServiceOrder.objects.select_related("encounter__registration__unit")
+            .filter(pk=order_id)
+            .first()
+        )
         if order is None:
             return Response({"detail": "Order obat tidak ditemukan."}, status=404)
         if not has_scoped_role(
@@ -49,9 +50,11 @@ class MedicationDispenseCollectionView(APIView):
         return Response({"items": [dispense_data(row) for row in rows]})
 
     def post(self, request, order_id):
-        order = ServiceOrder.objects.select_related("encounter__registration__unit").filter(
-            pk=order_id
-        ).first()
+        order = (
+            ServiceOrder.objects.select_related("encounter__registration__unit")
+            .filter(pk=order_id)
+            .first()
+        )
         if order is None:
             return Response({"detail": "Order obat tidak ditemukan."}, status=404)
         if not has_scoped_role(

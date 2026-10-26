@@ -49,7 +49,10 @@ def record_diagnostic_result(*, order_id, result_text, result_status, actor):
         recorded_by=actor,
         recorded_at=timezone.now(),
     )
-    if result_status in {DiagnosticResult.ResultStatus.FINAL, DiagnosticResult.ResultStatus.AMENDED}:
+    if result_status in {
+        DiagnosticResult.ResultStatus.FINAL,
+        DiagnosticResult.ResultStatus.AMENDED,
+    }:
         order.status = ServiceOrder.Status.COMPLETED
         order.fulfilled_at = timezone.now()
         order.save(update_fields=["status", "fulfilled_at"])

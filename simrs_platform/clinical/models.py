@@ -26,7 +26,9 @@ class Encounter(models.Model):
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.OPEN)
     chief_complaint = models.CharField(max_length=500, blank=True)
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="clinical_encounters_created"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="clinical_encounters_created",
     )
     opened_at = models.DateTimeField(default=timezone.now)
     closed_at = models.DateTimeField(null=True, blank=True)
@@ -63,12 +65,16 @@ class ClinicalNote(models.Model):
     class Meta:
         ordering = ["-version"]
         constraints = [
-            models.UniqueConstraint(fields=["encounter", "version"], name="uniq_clinical_note_version")
+            models.UniqueConstraint(
+                fields=["encounter", "version"], name="uniq_clinical_note_version"
+            )
         ]
 
     def save(self, *args, **kwargs):
         if self.pk and type(self).objects.filter(pk=self.pk).exists():
-            raise ValidationError("Catatan klinis tersimpan tidak dapat ditimpa; tambahkan versi baru.")
+            raise ValidationError(
+                "Catatan klinis tersimpan tidak dapat ditimpa; tambahkan versi baru."
+            )
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
@@ -85,14 +91,18 @@ class EncounterDiagnosis(models.Model):
     display = models.CharField(max_length=240)
     is_primary = models.BooleanField(default=False)
     recorded_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="encounter_diagnoses_recorded"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="encounter_diagnoses_recorded",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-is_primary", "code"]
         constraints = [
-            models.UniqueConstraint(fields=["encounter", "code"], name="uniq_encounter_diagnosis_code")
+            models.UniqueConstraint(
+                fields=["encounter", "code"], name="uniq_encounter_diagnosis_code"
+            )
         ]
 
     def __str__(self) -> str:

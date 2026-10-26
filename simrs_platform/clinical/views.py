@@ -6,12 +6,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from clinical.models import ClinicalNote, Encounter
-from clinical.services import ClinicalConflict, append_clinical_note, create_encounter, record_diagnosis
+from clinical.services import (
+    ClinicalConflict,
+    append_clinical_note,
+    create_encounter,
+    record_diagnosis,
+)
 from frontoffice.models import Registration
 from identity.models import RoleAssignment
 from platform_core.audit import record_audit_event
 from platform_core.authorization import has_scoped_role
-
 
 CLINICAL_READ_ROLES = {
     RoleAssignment.Role.SYSTEM_ADMIN,
@@ -42,8 +46,7 @@ class ClinicalNoteRequest(serializers.Serializer):
 
     def validate(self, attrs):
         if not any(
-            attrs.get(key, "").strip()
-            for key in ("subjective", "objective", "assessment", "plan")
+            attrs.get(key, "").strip() for key in ("subjective", "objective", "assessment", "plan")
         ):
             raise serializers.ValidationError("Isi setidaknya satu bagian catatan klinis.")
         return attrs
@@ -93,7 +96,9 @@ class EncounterCollectionView(APIView):
         if not unit_id:
             return Response({"detail": "unit_id wajib diisi."}, status=400)
         if not has_scoped_role(request.user, CLINICAL_READ_ROLES, unit_id=unit_id):
-            return Response({"detail": "Akses encounter tidak diizinkan untuk unit ini."}, status=403)
+            return Response(
+                {"detail": "Akses encounter tidak diizinkan untuk unit ini."}, status=403
+            )
         rows = (
             Encounter.objects.select_related(
                 "registration", "registration__patient", "registration__unit"
@@ -107,9 +112,11 @@ class EncounterCollectionView(APIView):
         serializer = EncounterCreateRequest(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
-        registration = Registration.objects.select_related("unit").filter(
-            pk=serializer.validated_data["registration_id"]
-        ).first()
+        registration = (
+            Registration.objects.select_related("unit")
+            .filter(pk=serializer.validated_data["registration_id"])
+            .first()
+        )
         if registration is None:
             return Response({"detail": "Registrasi tidak ditemukan."}, status=404)
         if not has_scoped_role(
@@ -137,9 +144,9 @@ class ClinicalNoteCollectionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, encounter_id):
-        encounter = Encounter.objects.select_related("registration__unit").filter(
-            pk=encounter_id
-        ).first()
+        encounter = (
+            Encounter.objects.select_related("registration__unit").filter(pk=encounter_id).first()
+        )
         if encounter is None:
             return Response({"detail": "Encounter tidak ditemukan."}, status=404)
         if not has_scoped_role(
@@ -158,15 +165,17 @@ class ClinicalNoteCollectionView(APIView):
         return Response({"items": [note_data(note) for note in rows]})
 
     def post(self, request, encounter_id):
-        encounter = Encounter.objects.select_related("registration__unit").filter(
-            pk=encounter_id
-        ).first()
+        encounter = (
+            Encounter.objects.select_related("registration__unit").filter(pk=encounter_id).first()
+        )
         if encounter is None:
             return Response({"detail": "Encounter tidak ditemukan."}, status=404)
         if not has_scoped_role(
             request.user, CLINICAL_WRITE_ROLES, unit_id=str(encounter.registration.unit_id)
         ):
-            return Response({"detail": "Akses penulisan catatan klinis tidak diizinkan."}, status=403)
+            return Response(
+                {"detail": "Akses penulisan catatan klinis tidak diizinkan."}, status=403
+            )
         serializer = ClinicalNoteRequest(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
@@ -192,9 +201,9 @@ class DiagnosisCollectionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, encounter_id):
-        encounter = Encounter.objects.select_related("registration__unit").filter(
-            pk=encounter_id
-        ).first()
+        encounter = (
+            Encounter.objects.select_related("registration__unit").filter(pk=encounter_id).first()
+        )
         if encounter is None:
             return Response({"detail": "Encounter tidak ditemukan."}, status=404)
         if not has_scoped_role(

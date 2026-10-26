@@ -24,7 +24,9 @@ class MedicationDispense(models.Model):
     class Meta:
         ordering = ["sequence"]
         constraints = [
-            models.UniqueConstraint(fields=["order", "sequence"], name="uniq_dispense_order_sequence")
+            models.UniqueConstraint(
+                fields=["order", "sequence"], name="uniq_dispense_order_sequence"
+            )
         ]
 
     def __str__(self) -> str:

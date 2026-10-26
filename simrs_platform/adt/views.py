@@ -12,7 +12,6 @@ from identity.models import RoleAssignment
 from organization.models import OrganizationUnit
 from platform_core.authorization import has_scoped_role
 
-
 ADT_ROLES = {
     RoleAssignment.Role.SYSTEM_ADMIN,
     RoleAssignment.Role.DOCTOR,
@@ -69,16 +68,21 @@ class AdmissionCollectionView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
         data = serializer.validated_data
-        encounter = Encounter.objects.select_related("registration__unit").filter(
-            pk=data["encounter_id"]
-        ).first()
+        encounter = (
+            Encounter.objects.select_related("registration__unit")
+            .filter(pk=data["encounter_id"])
+            .first()
+        )
         ward = OrganizationUnit.objects.filter(pk=data["ward_unit_id"], is_active=True).first()
         if encounter is None or ward is None:
             return Response({"detail": "Encounter atau unit tujuan tidak ditemukan."}, status=404)
         if not has_scoped_role(
             request.user, ADT_ROLES, unit_id=str(encounter.registration.unit_id)
         ) or not has_scoped_role(request.user, ADT_ROLES, unit_id=str(ward.id)):
-            return Response({"detail": "Akses admisi memerlukan penugasan pada unit asal dan ruang rawat."}, status=403)
+            return Response(
+                {"detail": "Akses admisi memerlukan penugasan pada unit asal dan ruang rawat."},
+                status=403,
+            )
         try:
             row = admit_patient(
                 encounter_id=str(encounter.id),
@@ -100,15 +104,22 @@ class AdmissionDischargeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, admission_id):
-        row = Admission.objects.select_related(
-            "ward", "encounter__registration__unit", "encounter__registration__patient", "encounter__registration"
-        ).filter(pk=admission_id).first()
+        row = (
+            Admission.objects.select_related(
+                "ward",
+                "encounter__registration__unit",
+                "encounter__registration__patient",
+                "encounter__registration",
+            )
+            .filter(pk=admission_id)
+            .first()
+        )
         if row is None:
             return Response({"detail": "Catatan admisi tidak ditemukan."}, status=404)
-        if not has_scoped_role(
-            request.user, ADT_ROLES, unit_id=str(row.ward_id)
-        ):
-            return Response({"detail": "Akses pemulangan tidak diizinkan untuk ruang rawat ini."}, status=403)
+        if not has_scoped_role(request.user, ADT_ROLES, unit_id=str(row.ward_id)):
+            return Response(
+                {"detail": "Akses pemulangan tidak diizinkan untuk ruang rawat ini."}, status=403
+            )
         serializer = DischargeRequest(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
