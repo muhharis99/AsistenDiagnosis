@@ -228,3 +228,10 @@ Menambahkan tes kontrak lokal untuk Condition, Composition, Observation, Clinica
 ## Blueprint SIMRS — Fase 0
 
 Dokumen discovery/arsitektur awal untuk target SIMRS tersedia di [docs/FASE_0_SIMRS_BLUEPRINT.md](docs/FASE_0_SIMRS_BLUEPRINT.md), dengan keputusan, asumsi, status, dan backlog tercatat pada [PROJECT_STATE.md](PROJECT_STATE.md). Ini adalah blueprint perencanaan, bukan sistem siap produksi. Repo sekarang tetap merupakan prototipe diagnosis Python/Streamlit dan RME/SATUSEHAT demo. Jangan masukkan data pasien nyata atau gunakan hasil AI untuk keputusan klinis. Fase implementasi menunggu konfirmasi prioritas dan perintah eksplisit `LANJUT`.
+
+
+## SIMRS Platform Foundation — Fase 1
+
+Fondasi Python terisolasi telah ditambahkan di [simrs_platform/](simrs_platform/): Django/DRF, struktur organisasi dan assignment unit, role assignment, katalog terminologi berversi, MPI demo terenkripsi, serta audit hash-chain append-only. Cara menjalankan dan batasan tersedia pada [simrs_platform/README.md](simrs_platform/README.md).
+
+Fase ini tetap **demo-only** dengan data sintetis; bukan SIMRS produksi. Jangan memasukkan data pasien nyata, jangan mengaktifkan layanan ke jaringan publik, dan jangan menganggap hasil sebagai bukti kepatuhan. Validasi klinis, review hukum/privasi, uji keamanan independen, UAT, dan persetujuan manajemen tetap wajib.
