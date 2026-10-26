@@ -14,6 +14,7 @@ class RoleAssignment(models.Model):
         NURSE = "NURSE", "Perawat/Bidan"
         PHARMACY = "PHARMACY", "Farmasi"
         LAB = "LAB", "Laboratorium"
+        RADIOLOGY = "RADIOLOGY", "Radiologi"
         CASHIER = "CASHIER", "Kasir"
         AUDITOR = "AUDITOR", "Auditor"
 
