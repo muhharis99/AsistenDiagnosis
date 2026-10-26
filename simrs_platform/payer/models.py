@@ -34,9 +34,7 @@ class PayerOrganization(models.Model):
 
 class PayerPlan(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    payer = models.ForeignKey(
-        PayerOrganization, on_delete=models.PROTECT, related_name="plans"
-    )
+    payer = models.ForeignKey(PayerOrganization, on_delete=models.PROTECT, related_name="plans")
     code = models.CharField(max_length=48, unique=True)
     name = models.CharField(max_length=180)
     effective_from = models.DateField()
@@ -48,9 +46,7 @@ class PayerPlan(models.Model):
     class Meta:
         ordering = ["payer__code", "code"]
         constraints = [
-            models.CheckConstraint(
-                condition=~models.Q(code=""), name="payer_plan_code_not_blank"
-            ),
+            models.CheckConstraint(condition=~models.Q(code=""), name="payer_plan_code_not_blank"),
             models.CheckConstraint(
                 condition=models.Q(effective_to__isnull=True)
                 | models.Q(effective_to__gte=models.F("effective_from")),
@@ -123,7 +119,9 @@ class RegistrationCoverage(models.Model):
     )
     priority = models.PositiveSmallIntegerField()
     verified_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="registration_coverages_verified"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="registration_coverages_verified",
     )
     verified_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)

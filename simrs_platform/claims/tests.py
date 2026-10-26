@@ -6,16 +6,21 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from cashier.models import Invoice, TariffItem, create_invoice, issue_invoice
+from cashier.models import TariffItem, create_invoice, issue_invoice
 from claims.models import Claim, ClaimCollection
-from claims.services import ClaimConflict, adjudicate_claim, collect_claim_balance, create_claim, submit_claim
+from claims.services import (
+    ClaimConflict,
+    adjudicate_claim,
+    collect_claim_balance,
+    create_claim,
+    submit_claim,
+)
 from frontoffice.services import create_registration
 from identity.models import RoleAssignment
 from mpi.models import Patient
-from payer.models import Coverage, PayerOrganization, PayerPlan, RegistrationCoverage
-from platform_core.authorization import has_scoped_role
-from receivables.models import ReceivableLedgerEntry
 from organization.models import OrganizationUnit, UserUnitAssignment
+from payer.models import Coverage, PayerOrganization, PayerPlan, RegistrationCoverage
+from receivables.models import ReceivableLedgerEntry
 
 pytestmark = pytest.mark.django_db
 
@@ -38,13 +43,19 @@ def claims_context():
         administrative_sex=Patient.AdministrativeSex.UNKNOWN,
     )
     registration = create_registration(
-        patient_id=str(patient.id), unit_id=str(unit.id), visit_date=timezone.localdate(), actor=user
+        patient_id=str(patient.id),
+        unit_id=str(unit.id),
+        visit_date=timezone.localdate(),
+        actor=user,
     )
     invoice_line_price = Decimal("10000.00")
     tariff = TariffItem.objects.create(
-        code="CLAIM-SYN-TAR", name="Tarif klaim sintetis",
-        category=TariffItem.Category.CONSULTATION, unit_price=invoice_line_price,
-        effective_from=date(2020, 1, 1), is_active=True,
+        code="CLAIM-SYN-TAR",
+        name="Tarif klaim sintetis",
+        category=TariffItem.Category.CONSULTATION,
+        unit_price=invoice_line_price,
+        effective_from=date(2020, 1, 1),
+        is_active=True,
     )
     invoice = create_invoice(
         registration_id=str(registration.id),
@@ -52,33 +63,54 @@ def claims_context():
         actor=user,
     )
     invoice = issue_invoice(invoice_id=str(invoice.id), actor=user)
-    payer1 = PayerOrganization.objects.create(code="SYN-P1", name="Penjamin Sintetis 1", payer_type=PayerOrganization.PayerType.PRIVATE)
+    payer1 = PayerOrganization.objects.create(
+        code="SYN-P1", name="Penjamin Sintetis 1", payer_type=PayerOrganization.PayerType.PRIVATE
+    )
     plan1 = PayerPlan.objects.create(
-        payer=payer1, code="SYN-PLAN-1", name="Paket Sintetis 1",
+        payer=payer1,
+        code="SYN-PLAN-1",
+        name="Paket Sintetis 1",
         effective_from=date(2020, 1, 1),
     )
     coverage1 = Coverage.objects.create(
-        patient=patient, plan=plan1, member_reference="SYN-MEMBER-1",
-        effective_from=date(2020, 1, 1), verified_by=user, verified_at=timezone.now(),
+        patient=patient,
+        plan=plan1,
+        member_reference="SYN-MEMBER-1",
+        effective_from=date(2020, 1, 1),
+        verified_by=user,
+        verified_at=timezone.now(),
     )
     assignment1 = RegistrationCoverage.objects.create(
         registration=registration, coverage=coverage1, priority=1, verified_by=user
     )
-    payer2 = PayerOrganization.objects.create(code="SYN-P2", name="Penjamin Sintetis 2", payer_type=PayerOrganization.PayerType.OTHER)
+    payer2 = PayerOrganization.objects.create(
+        code="SYN-P2", name="Penjamin Sintetis 2", payer_type=PayerOrganization.PayerType.OTHER
+    )
     plan2 = PayerPlan.objects.create(
-        payer=payer2, code="SYN-PLAN-2", name="Paket Sintetis 2",
+        payer=payer2,
+        code="SYN-PLAN-2",
+        name="Paket Sintetis 2",
         effective_from=date(2020, 1, 1),
     )
     coverage2 = Coverage.objects.create(
-        patient=patient, plan=plan2, member_reference="SYN-MEMBER-2",
-        effective_from=date(2020, 1, 1), verified_by=user, verified_at=timezone.now(),
+        patient=patient,
+        plan=plan2,
+        member_reference="SYN-MEMBER-2",
+        effective_from=date(2020, 1, 1),
+        verified_by=user,
+        verified_at=timezone.now(),
     )
     assignment2 = RegistrationCoverage.objects.create(
         registration=registration, coverage=coverage2, priority=2, verified_by=user
     )
     return {
-        "user": user, "unit": unit, "patient": patient, "registration": registration,
-        "invoice": invoice, "assignment1": assignment1, "assignment2": assignment2,
+        "user": user,
+        "unit": unit,
+        "patient": patient,
+        "registration": registration,
+        "invoice": invoice,
+        "assignment1": assignment1,
+        "assignment2": assignment2,
     }
 
 
@@ -113,14 +145,17 @@ def test_primary_claim_adjudication_and_collections(claims_context):
         actor=d["user"],
     )
     assert payment.amount == Decimal("10000.00")
-    assert collect_claim_balance(
-        claim_id=str(claim.id),
-        collection_type=ClaimCollection.CollectionType.PAYER_REMITTANCE,
-        amount=Decimal("10000.00"),
-        external_reference="SYN-REM-1",
-        idempotency_key="syn-remit-1",
-        actor=d["user"],
-    ).id == payment.id
+    assert (
+        collect_claim_balance(
+            claim_id=str(claim.id),
+            collection_type=ClaimCollection.CollectionType.PAYER_REMITTANCE,
+            amount=Decimal("10000.00"),
+            external_reference="SYN-REM-1",
+            idempotency_key="syn-remit-1",
+            actor=d["user"],
+        ).id
+        == payment.id
+    )
     claim.refresh_from_db()
     assert claim.status == Claim.Status.PARTIALLY_PAID
     with pytest.raises(ValueError):
@@ -238,6 +273,7 @@ def test_ledger_entries_are_immutable(claims_context):
     entry = ReceivableLedgerEntry.objects.get(claim=claim)
     entry.amount = Decimal("1.00")
     from django.core.exceptions import ValidationError
+
     with pytest.raises(ValidationError):
         entry.save()
     with pytest.raises(ValidationError):

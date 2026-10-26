@@ -3,7 +3,6 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Sum
 from django.utils import timezone
 
 from cashier.models import Invoice
@@ -56,7 +55,9 @@ def create_claim(*, registration_id, coverage_assignment_id, actor):
         raise ValueError("Kepesertaan penjamin bukan milik pasien pada registrasi ini.")
     invoice = Invoice.objects.select_for_update().filter(registration=registration).first()
     if invoice is None or invoice.status != Invoice.Status.ISSUED:
-        raise ValueError("Klaim demo hanya dapat dibuat dari invoice yang sudah terbit dan belum dibayar.")
+        raise ValueError(
+            "Klaim demo hanya dapat dibuat dari invoice yang sudah terbit dan belum dibayar."
+        )
     if not assignment.coverage.active_on(registration.visit_date):
         raise ValueError("Kepesertaan tidak aktif pada tanggal kunjungan.")
     if Claim.objects.filter(registration=registration, coverage_assignment=assignment).exists():
@@ -146,16 +147,22 @@ def submit_claim(*, claim_id, actor):
         raise ValueError("Klaim tidak ditemukan.")
     if claim.status != Claim.Status.DRAFT:
         raise ClaimConflict("Hanya klaim DRAFT yang dapat diajukan.")
-    if not claim.lines.exists() or sum((x.claimed_amount for x in claim.lines.all()), Decimal("0.00")) != claim.claimed_amount:
+    if (
+        not claim.lines.exists()
+        or sum((x.claimed_amount for x in claim.lines.all()), Decimal("0.00"))
+        != claim.claimed_amount
+    ):
         raise ValueError("Jumlah baris klaim tidak sama dengan total klaim.")
     payer = claim.coverage_assignment.coverage.plan.payer
     if claim.coverage_assignment.priority > 1:
         previous_assignment = RegistrationCoverage.objects.filter(
             registration=claim.registration, priority=claim.coverage_assignment.priority - 1
         ).first()
-        previous_claim = Claim.objects.select_for_update().filter(
-            registration=claim.registration, coverage_assignment=previous_assignment
-        ).first()
+        previous_claim = (
+            Claim.objects.select_for_update()
+            .filter(registration=claim.registration, coverage_assignment=previous_assignment)
+            .first()
+        )
         if previous_claim is None or previous_claim.patient_balance != claim.claimed_amount:
             raise ClaimConflict("Saldo tanggung jawab pasien berubah; perbarui klaim COB.")
         _ledger(
@@ -185,7 +192,11 @@ def submit_claim(*, claim_id, actor):
         event_type="claims.claim.submitted",
         subject_type="Claim",
         subject_id=str(claim.id),
-        metadata={"claim_no": claim.claim_no, "amount": str(claim.claimed_amount), "payer_code": payer.code},
+        metadata={
+            "claim_no": claim.claim_no,
+            "amount": str(claim.claimed_amount),
+            "payer_code": payer.code,
+        },
         organization_unit=claim.registration.unit,
     )
     return claim
@@ -193,7 +204,14 @@ def submit_claim(*, claim_id, actor):
 
 @transaction.atomic
 def adjudicate_claim(
-    *, claim_id, allowed_amount, denied_amount, patient_responsibility, external_reference, reason, actor
+    *,
+    claim_id,
+    allowed_amount,
+    denied_amount,
+    patient_responsibility,
+    external_reference,
+    reason,
+    actor,
 ):
     claim = (
         Claim.objects.select_for_update()
@@ -211,7 +229,9 @@ def adjudicate_claim(
     if min(allowed_amount, denied_amount, patient_responsibility) < Decimal("0.00"):
         raise ValueError("Nominal adjudikasi tidak boleh negatif.")
     if allowed_amount + denied_amount + patient_responsibility != claim.claimed_amount:
-        raise ValueError("Allowed + denied + tanggung jawab pasien harus sama dengan nominal klaim.")
+        raise ValueError(
+            "Allowed + denied + tanggung jawab pasien harus sama dengan nominal klaim."
+        )
     if not external_reference.strip():
         raise ValueError("Referensi adjudikasi wajib diisi.")
     row = ClaimAdjudication.objects.create(
@@ -280,7 +300,9 @@ def adjudicate_claim(
 
 
 @transaction.atomic
-def collect_claim_balance(*, claim_id, collection_type, amount, external_reference, idempotency_key, actor):
+def collect_claim_balance(
+    *, claim_id, collection_type, amount, external_reference, idempotency_key, actor
+):
     claim = (
         Claim.objects.select_for_update()
         .select_related("registration__unit", "coverage_assignment__coverage__plan__payer")
@@ -345,7 +367,11 @@ def collect_claim_balance(*, claim_id, collection_type, amount, external_referen
     )
     if collection_type == ClaimCollection.CollectionType.PAYER_REMITTANCE:
         claim.refresh_from_db()
-        claim.status = Claim.Status.PAID if claim.payer_balance == Decimal("0.00") else Claim.Status.PARTIALLY_PAID
+        claim.status = (
+            Claim.Status.PAID
+            if claim.payer_balance == Decimal("0.00")
+            else Claim.Status.PARTIALLY_PAID
+        )
         claim.save(update_fields=["status"])
     record_audit_event(
         actor=actor,

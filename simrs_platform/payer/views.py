@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
-from django.db.models import Q
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
@@ -17,9 +14,11 @@ from payer.services import assign_registration_coverage
 from platform_core.audit import record_audit_event
 from platform_core.authorization import has_any_scoped_role, has_scoped_role
 
-
 PAYER_ADMIN_ROLES = {RoleAssignment.Role.SYSTEM_ADMIN, RoleAssignment.Role.INSURANCE_BILLING}
-PAYER_READ_ROLES = PAYER_ADMIN_ROLES | {RoleAssignment.Role.PAYER_REVIEWER, RoleAssignment.Role.AUDITOR}
+PAYER_READ_ROLES = PAYER_ADMIN_ROLES | {
+    RoleAssignment.Role.PAYER_REVIEWER,
+    RoleAssignment.Role.AUDITOR,
+}
 
 
 def payer_access(user):
@@ -50,7 +49,9 @@ class CoverageRequest(serializers.Serializer):
 
     def validate(self, attrs):
         if attrs.get("effective_to") and attrs["effective_to"] < attrs["effective_from"]:
-            raise serializers.ValidationError("Tanggal akhir kepesertaan harus sama atau sesudah tanggal awal.")
+            raise serializers.ValidationError(
+                "Tanggal akhir kepesertaan harus sama atau sesudah tanggal awal."
+            )
         if not attrs["member_reference"].strip():
             raise serializers.ValidationError("Referensi kepesertaan wajib diisi.")
         return attrs
@@ -121,7 +122,9 @@ class PayerCollectionView(APIView):
     def get(self, request):
         if not payer_access(request.user):
             return Response({"detail": "Akses data penjamin tidak diizinkan."}, status=403)
-        return Response({"items": [payer_data(x) for x in PayerOrganization.objects.order_by("code")[:500]]})
+        return Response(
+            {"items": [payer_data(x) for x in PayerOrganization.objects.order_by("code")[:500]]}
+        )
 
     def post(self, request):
         if not has_any_scoped_role(request.user, PAYER_ADMIN_ROLES):
@@ -154,7 +157,9 @@ class PlanCollectionView(APIView):
 
     def post(self, request):
         if not has_any_scoped_role(request.user, PAYER_ADMIN_ROLES):
-            return Response({"detail": "Pembuatan paket penjamin memerlukan role penjamin."}, status=403)
+            return Response(
+                {"detail": "Pembuatan paket penjamin memerlukan role penjamin."}, status=403
+            )
         serializer = PlanRequest(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
@@ -184,30 +189,43 @@ class CoverageCollectionView(APIView):
         patient_id = request.query_params.get("patient_id", "").strip()
         if not patient_id:
             return Response({"detail": "patient_id wajib diisi."}, status=400)
-        rows = Coverage.objects.select_related("patient", "plan__payer").filter(
-            patient_id=patient_id
-        ).order_by("plan__payer__code")[:200]
+        rows = (
+            Coverage.objects.select_related("patient", "plan__payer")
+            .filter(patient_id=patient_id)
+            .order_by("plan__payer__code")[:200]
+        )
         return Response({"items": [coverage_data(x) for x in rows]})
 
     def post(self, request):
         if not has_any_scoped_role(request.user, PAYER_ADMIN_ROLES):
-            return Response({"detail": "Pembuatan kepesertaan memerlukan role penjamin."}, status=403)
+            return Response(
+                {"detail": "Pembuatan kepesertaan memerlukan role penjamin."}, status=403
+            )
         serializer = CoverageRequest(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
         data = serializer.validated_data
-        patient = Patient.objects.filter(pk=data.pop("patient_id"), status=Patient.Status.ACTIVE).first()
-        plan = PayerPlan.objects.select_related("payer").filter(
-            pk=data.pop("plan_id"), is_active=True, payer__is_active=True
+        patient = Patient.objects.filter(
+            pk=data.pop("patient_id"), status=Patient.Status.ACTIVE
         ).first()
+        plan = (
+            PayerPlan.objects.select_related("payer")
+            .filter(pk=data.pop("plan_id"), is_active=True, payer__is_active=True)
+            .first()
+        )
         if patient is None:
             return Response({"detail": "Pasien MPI tidak ditemukan atau tidak aktif."}, status=404)
         if plan is None:
-            return Response({"detail": "Paket penjamin tidak ditemukan atau tidak aktif."}, status=404)
+            return Response(
+                {"detail": "Paket penjamin tidak ditemukan atau tidak aktif."}, status=404
+            )
         if data["effective_from"] < plan.effective_from or (
-            plan.effective_to and (data.get("effective_to") is None or data["effective_to"] > plan.effective_to)
+            plan.effective_to
+            and (data.get("effective_to") is None or data["effective_to"] > plan.effective_to)
         ):
-            return Response({"detail": "Periode kepesertaan harus berada dalam masa berlaku paket."}, status=400)
+            return Response(
+                {"detail": "Periode kepesertaan harus berada dalam masa berlaku paket."}, status=400
+            )
         row = Coverage.objects.create(
             patient=patient,
             plan=plan,
@@ -235,10 +253,10 @@ class RegistrationCoverageCollectionView(APIView):
         registration = Registration.objects.filter(pk=registration_id).first()
         if registration is None:
             return Response({"detail": "Registrasi tidak ditemukan."}, status=404)
-        if not has_scoped_role(
-            request.user, PAYER_READ_ROLES, unit_id=str(registration.unit_id)
-        ):
-            return Response({"detail": "Akses penjamin tidak diizinkan untuk unit ini."}, status=403)
+        if not has_scoped_role(request.user, PAYER_READ_ROLES, unit_id=str(registration.unit_id)):
+            return Response(
+                {"detail": "Akses penjamin tidak diizinkan untuk unit ini."}, status=403
+            )
         rows = RegistrationCoverage.objects.select_related(
             "registration", "coverage__patient", "coverage__plan__payer"
         ).filter(registration=registration)
@@ -252,10 +270,10 @@ class RegistrationCoverageCollectionView(APIView):
         registration = Registration.objects.filter(pk=data["registration_id"]).first()
         if registration is None:
             return Response({"detail": "Registrasi tidak ditemukan."}, status=404)
-        if not has_scoped_role(
-            request.user, PAYER_ADMIN_ROLES, unit_id=str(registration.unit_id)
-        ):
-            return Response({"detail": "Penetapan penjamin memerlukan role penjamin di unit ini."}, status=403)
+        if not has_scoped_role(request.user, PAYER_ADMIN_ROLES, unit_id=str(registration.unit_id)):
+            return Response(
+                {"detail": "Penetapan penjamin memerlukan role penjamin di unit ini."}, status=403
+            )
         try:
             row = assign_registration_coverage(actor=request.user, **data)
         except ValueError as exc:

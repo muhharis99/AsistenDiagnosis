@@ -31,7 +31,9 @@ class Claim(models.Model):
         "payer.RegistrationCoverage", on_delete=models.PROTECT, related_name="claims"
     )
     claimed_amount = models.DecimalField(max_digits=14, decimal_places=2)
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT, db_index=True)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.DRAFT, db_index=True
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="payer_claims_created"
     )
@@ -42,9 +44,12 @@ class Claim(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["registration", "coverage_assignment"], name="uniq_claim_registration_coverage"
+                fields=["registration", "coverage_assignment"],
+                name="uniq_claim_registration_coverage",
             ),
-            models.CheckConstraint(condition=models.Q(claimed_amount__gt=0), name="claim_amount_positive"),
+            models.CheckConstraint(
+                condition=models.Q(claimed_amount__gt=0), name="claim_amount_positive"
+            ),
         ]
         indexes = [models.Index(fields=["status", "created_at"])]
 
@@ -61,9 +66,13 @@ class Claim(models.Model):
     def payer_balance(self):
         from receivables.models import ReceivableLedgerEntry
 
-        values = ReceivableLedgerEntry.objects.filter(
-            claim=self, account_type=ReceivableLedgerEntry.AccountType.PAYER
-        ).values("direction").annotate(total=Sum("amount"))
+        values = (
+            ReceivableLedgerEntry.objects.filter(
+                claim=self, account_type=ReceivableLedgerEntry.AccountType.PAYER
+            )
+            .values("direction")
+            .annotate(total=Sum("amount"))
+        )
         totals = {row["direction"]: row["total"] or Decimal("0.00") for row in values}
         return totals.get(ReceivableLedgerEntry.Direction.DEBIT, Decimal("0.00")) - totals.get(
             ReceivableLedgerEntry.Direction.CREDIT, Decimal("0.00")
@@ -73,9 +82,13 @@ class Claim(models.Model):
     def patient_balance(self):
         from receivables.models import ReceivableLedgerEntry
 
-        values = ReceivableLedgerEntry.objects.filter(
-            claim=self, account_type=ReceivableLedgerEntry.AccountType.PATIENT
-        ).values("direction").annotate(total=Sum("amount"))
+        values = (
+            ReceivableLedgerEntry.objects.filter(
+                claim=self, account_type=ReceivableLedgerEntry.AccountType.PATIENT
+            )
+            .values("direction")
+            .annotate(total=Sum("amount"))
+        )
         totals = {row["direction"]: row["total"] or Decimal("0.00") for row in values}
         return totals.get(ReceivableLedgerEntry.Direction.DEBIT, Decimal("0.00")) - totals.get(
             ReceivableLedgerEntry.Direction.CREDIT, Decimal("0.00")
@@ -89,7 +102,11 @@ class ClaimLine(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     claim = models.ForeignKey(Claim, on_delete=models.PROTECT, related_name="lines")
     invoice_line = models.ForeignKey(
-        "cashier.InvoiceLine", on_delete=models.PROTECT, null=True, blank=True, related_name="payer_claim_lines"
+        "cashier.InvoiceLine",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="payer_claim_lines",
     )
     code_snapshot = models.CharField(max_length=80)
     display_snapshot = models.CharField(max_length=240)
@@ -99,14 +116,21 @@ class ClaimLine(models.Model):
     class Meta:
         ordering = ["code_snapshot"]
         constraints = [
-            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="claim_line_quantity_positive"),
-            models.CheckConstraint(condition=models.Q(claimed_amount__gt=0), name="claim_line_amount_positive"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="claim_line_quantity_positive"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(claimed_amount__gt=0), name="claim_line_amount_positive"
+            ),
         ]
 
     def save(self, *args, **kwargs):
         if self.pk and type(self).objects.filter(pk=self.pk).exists():
             raise ValidationError("Baris klaim tersimpan tidak dapat ditimpa.")
-        if self.claim_id and Claim.objects.filter(pk=self.claim_id).exclude(status=Claim.Status.DRAFT).exists():
+        if (
+            self.claim_id
+            and Claim.objects.filter(pk=self.claim_id).exclude(status=Claim.Status.DRAFT).exists()
+        ):
             raise ValidationError("Baris klaim hanya dapat dibuat saat klaim masih DRAFT.")
         super().save(*args, **kwargs)
 
@@ -124,18 +148,32 @@ class ClaimAdjudication(models.Model):
     external_reference = models.CharField(max_length=120)
     reason = models.CharField(max_length=500, blank=True)
     recorded_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="claim_adjudications_recorded"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="claim_adjudications_recorded",
     )
     recorded_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["-version"]
         constraints = [
-            models.UniqueConstraint(fields=["claim", "version"], name="uniq_claim_adjudication_version"),
-            models.CheckConstraint(condition=models.Q(allowed_amount__gte=0), name="claim_allowed_nonnegative"),
-            models.CheckConstraint(condition=models.Q(denied_amount__gte=0), name="claim_denied_nonnegative"),
-            models.CheckConstraint(condition=models.Q(patient_responsibility__gte=0), name="claim_patient_share_nonnegative"),
-            models.CheckConstraint(condition=~models.Q(external_reference=""), name="claim_adjudication_reference_not_blank"),
+            models.UniqueConstraint(
+                fields=["claim", "version"], name="uniq_claim_adjudication_version"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(allowed_amount__gte=0), name="claim_allowed_nonnegative"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(denied_amount__gte=0), name="claim_denied_nonnegative"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(patient_responsibility__gte=0),
+                name="claim_patient_share_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(external_reference=""),
+                name="claim_adjudication_reference_not_blank",
+            ),
         ]
 
     def save(self, *args, **kwargs):
@@ -159,15 +197,22 @@ class ClaimCollection(models.Model):
     external_reference = models.CharField(max_length=120)
     idempotency_key = models.CharField(max_length=120, unique=True)
     recorded_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="claim_collections_recorded"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="claim_collections_recorded",
     )
     received_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["received_at"]
         constraints = [
-            models.CheckConstraint(condition=models.Q(amount__gt=0), name="claim_collection_amount_positive"),
-            models.CheckConstraint(condition=~models.Q(external_reference=""), name="claim_collection_reference_not_blank"),
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="claim_collection_amount_positive"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(external_reference=""),
+                name="claim_collection_reference_not_blank",
+            ),
         ]
 
     def save(self, *args, **kwargs):
@@ -176,4 +221,6 @@ class ClaimCollection(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        raise ValidationError("Penerimaan klaim tidak dapat dihapus; pembalikan harus melalui prosedur ter-audit.")
+        raise ValidationError(
+            "Penerimaan klaim tidak dapat dihapus; pembalikan harus melalui prosedur ter-audit."
+        )

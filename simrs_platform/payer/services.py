@@ -33,13 +33,20 @@ def assign_registration_coverage(*, registration_id, coverage_id, priority, acto
         raise ValueError("Kepesertaan atau paket penjamin tidak aktif pada tanggal kunjungan.")
     if priority < 1 or priority > 3:
         raise ValueError("Urutan COB harus antara 1 dan 3.")
-    if RegistrationCoverage.objects.filter(
-        registration=registration, priority__lt=priority
-    ).exists() is False and priority != 1:
+    if (
+        RegistrationCoverage.objects.filter(
+            registration=registration, priority__lt=priority
+        ).exists()
+        is False
+        and priority != 1
+    ):
         raise ValueError("Penjamin harus ditambahkan berurutan mulai dari prioritas 1.")
-    if priority > 1 and not RegistrationCoverage.objects.filter(
-        registration=registration, priority=priority - 1
-    ).exists():
+    if (
+        priority > 1
+        and not RegistrationCoverage.objects.filter(
+            registration=registration, priority=priority - 1
+        ).exists()
+    ):
         raise ValueError("Prioritas COB sebelumnya harus sudah terdaftar.")
     row = RegistrationCoverage.objects.create(
         registration=registration,
