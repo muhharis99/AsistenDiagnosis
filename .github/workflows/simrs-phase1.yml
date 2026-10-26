@@ -1,0 +1,54 @@
+name: SIMRS Phase 1 checks
+
+on:
+  push:
+    branches: [main, "feat/fase-1-foundation-20261026"]
+    paths:
+      - "simrs_platform/**"
+      - ".github/workflows/simrs-phase1.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "simrs_platform/**"
+      - ".github/workflows/simrs-phase1.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: simrs_platform
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+      - name: Resolve lockfile and migrations
+        run: |
+          set -e
+          uv lock
+          uv sync --all-groups
+          uv run python manage.py makemigrations organization identity terminology mpi platform_core
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add simrs_platform/uv.lock simrs_platform/organization/migrations simrs_platform/identity/migrations simrs_platform/terminology/migrations simrs_platform/mpi/migrations simrs_platform/platform_core/migrations
+          if ! git diff --cached --quiet; then
+            git commit -m "build(simrs): lock dependencies and add Phase 1 migrations"
+            git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          fi
+      - name: Django system checks
+        run: uv run python manage.py check
+      - name: Database migrations
+        run: uv run python manage.py migrate --noinput
+      - name: Test suite
+        run: uv run pytest -q
+      - name: Lint
+        run: uv run ruff check .
+      - name: Compile
+        run: uv run python -m compileall -q config organization identity terminology mpi platform_core
