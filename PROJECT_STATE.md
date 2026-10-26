@@ -15,7 +15,7 @@ Repository: https://github.com/muhharis99/AsistenDiagnosis
 - ADR-0002: domain internal terpisah dari FHIR/vendor melalui adapter.
 - ADR-0003: synthetic data di dev/test; default non-produksi dan network disabled by default.
 - ADR-0004: data klinis/keuangan yang diposting dikoreksi melalui amendment/versioning, bukan hard delete.
-- ADR-0005: SIMRS Laravel + React + PostgreSQL sebagai usulan stack operasional terpisah dari Python/Streamlit diagnosis prototype. Menunggu persetujuan pemilik.
+- ADR-0005: SIMRS operasional berbasis Python 3.12+ dengan Django + Django REST Framework + drf-spectacular dan PostgreSQL sebagai modular monolith; prototipe diagnosis Python/Streamlit dipisahkan sampai integrasi disetujui. Ini menyelaraskan rancangan dengan persyaratan wajib Python pada master prompt.
 
 See [docs/FASE_0_SIMRS_BLUEPRINT.md](docs/FASE_0_SIMRS_BLUEPRINT.md) for full rationale and diagrams.
 
@@ -52,3 +52,7 @@ See Part 2 of [docs/FASE_0_SIMRS_BLUEPRINT.md](docs/FASE_0_SIMRS_BLUEPRINT.md); 
 - NFR: non-functional requirement.
 - RPO/RTO: recovery point/time objectives.
 - [ASUMSI]: pending confirmation; [VERIFIKASI]: official/source validation required; [REVIEW KLINIS]: clinical sign-off required.
+
+
+## Follow-up correction
+- 2026-10-26: Menyelaraskan pilihan stack pada blueprint dengan master prompt: seluruh kode aplikasi dan logika bisnis SIMRS wajib Python; pilihan default Django + DRF + PostgreSQL. Dokumentasi saja; runtime/database tidak berubah.
