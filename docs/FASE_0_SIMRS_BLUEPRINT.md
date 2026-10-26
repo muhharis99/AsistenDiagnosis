@@ -224,8 +224,8 @@ flowchart LR
     OPS[Admin / Auditor]
   end
   subgraph Platform["SIMRS — modular monolith"]
-    WEB[Web UI React / TypeScript]
-    API[Laravel REST API / OpenAPI]
+    WEB[Django Templates + HTMX / Alpine.js]
+    API[Django + Django REST Framework / OpenAPI]
     IAM[IAM OIDC / RBAC + ABAC]
     DOM[Domain modules]
     AUD[Audit / Observability]
@@ -250,7 +250,7 @@ flowchart LR
   EXT --> OUT
 ```
 
-**Stack default (dapat berubah melalui ADR):** React/TypeScript untuk UI, Laravel untuk REST API dan domain module, PostgreSQL untuk transaksi, object storage untuk dokumen, OIDC provider (Keycloak dievaluasi), Redis/worker hanya saat kebutuhan terukur. Python/Streamlit tetap sebagai prototipe penelitian diagnosis dan tidak menjadi sumber data klinis produksi tanpa keputusan integrasi dan validasi terpisah. Tidak ada microservice pada awal karena operasi, observability dan transaksi terdistribusi akan menambah beban.
+**Stack default (dapat berubah melalui ADR):** Python 3.12+; Django + Django REST Framework + drf-spectacular untuk aplikasi/API dan domain module; PostgreSQL untuk transaksi; Django Templates + HTMX + Alpine.js + Tailwind sebagai UI default; object storage untuk dokumen; OIDC provider (Keycloak dievaluasi); Celery + Redis/RabbitMQ hanya bila kebutuhan worker terukur. Logika aplikasi dan bisnis tetap Python. Python/Streamlit diagnosis tetap sebagai prototipe penelitian yang dipisahkan dan tidak menjadi sumber data klinis produksi tanpa keputusan integrasi dan validasi terpisah. Tidak ada microservice pada awal karena operasi, observability dan transaksi terdistribusi akan menambah beban.
 
 ## 12. ADR awal
 
@@ -281,7 +281,7 @@ flowchart LR
 ### ADR-0005 — Stack SIMRS baru terpisah dari prototipe diagnosis
 - **Konteks:** aplikasi saat ini Python/Streamlit dan fokus pada eksperimen; kebutuhan operasional SIMRS berbeda.
 - **Opsi:** menambahkan seluruh modul ke prototype; gunakan stack web operasional terpisah lalu integrasikan dengan kontrak.
-- **Keputusan:** rancangan awal Laravel + React + PostgreSQL untuk SIMRS, sedangkan prototype diagnosis tetap terisolasi sampai ada desain integrasi, validasi klinis dan persetujuan.
+- **Keputusan:** modular monolith Python 3.12+ dengan Django + DRF + PostgreSQL untuk SIMRS; prototipe diagnosis tetap terisolasi sampai ada desain integrasi, validasi klinis dan persetujuan.
 - **Konsekuensi:** repositori/deployment baru mungkin diperlukan; jangan menyamakan model statistik dengan diagnosis klinis.
 
 ## 13. Rencana implementasi tingkat tinggi
