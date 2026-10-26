@@ -52,6 +52,8 @@ def create_claim(*, registration_id, coverage_assignment_id, actor):
     )
     if assignment is None:
         raise ValueError("Penjamin tidak terhubung dengan registrasi ini.")
+    if assignment.coverage.patient_id != registration.patient_id:
+        raise ValueError("Kepesertaan penjamin bukan milik pasien pada registrasi ini.")
     invoice = Invoice.objects.select_for_update().filter(registration=registration).first()
     if invoice is None or invoice.status != Invoice.Status.ISSUED:
         raise ValueError("Klaim demo hanya dapat dibuat dari invoice yang sudah terbit dan belum dibayar.")
