@@ -1,0 +1,51 @@
+[project]
+name = "simrs-platform-foundation"
+version = "0.1.0"
+description = "Phase 1 Python foundation for a synthetic-data SIMRS prototype"
+requires-python = ">=3.12"
+dependencies = [
+  "Django>=5.2,<5.3",
+  "djangorestframework>=3.16,<3.17",
+  "drf-spectacular>=0.28,<0.29",
+  "cryptography>=45,<47",
+  "python-dotenv>=1.1,<2",
+  "psycopg[binary]>=3.2,<4",
+  "gunicorn>=23,<24",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-django>=4.11,<5",
+  "factory-boy>=3.3,<4",
+  "ruff>=0.14,<0.15",
+  "mypy>=1.18,<2",
+  "django-stubs[compatible-mypy]>=5.2,<6",
+  "bandit>=1.8,<2",
+  "pip-audit>=2.9,<3",
+  "pre-commit>=4.3,<5",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_tests.py", "tests.py"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+strict = true
+warn_unused_ignores = true
+exclude = ["migrations/"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
